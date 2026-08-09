@@ -33,6 +33,12 @@
    <input id="q" placeholder="search…  e.g.  devaH  or  देवः  or  saMskriya" autofocus>
    <button onclick="run()" style="font-size:16px;padding:9px 16px">Search</button>
    <div class="f"><label>Text</label><select id="text"></select></div>
+   <div class="f"><label>Category</label><select id="category">
+      <option value="">all texts</option>
+      <option value="mula">mūlam only</option>
+      <option value="bhashya">bhāṣyam only</option>
+      <option value="tika">ṭīkās (Ānandagirī)</option>
+      <option value="prakarana">prakaraṇas</option></select></div>
    <div class="f"><label>Match</label><select id="mode">
       <option value="sandhi" selected>sandhi-tolerant (high-recall)</option>
       <option value="cooccur">words in same sentence</option>
@@ -65,11 +71,39 @@ function buildFilters(){const t=curText(),cont=document.getElementById('filters'
    cont.innerHTML+=`<div class="f"><label>${f.label}</label>${ctrl}</div>`;}
  cont.querySelectorAll('[data-k]').forEach(el=>el.addEventListener('change',run));}
 textSel.onchange=()=>{buildFilters();run();};
+document.getElementById('category').onchange=run;
 document.getElementById('mode').onchange=run;
 document.getElementById('showPossible').onchange=run;
 document.getElementById('q').addEventListener('input',e=>{document.getElementById('prev').textContent=SS.toDeva(e.target.value);});
 document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')run();});
-function passFilters(b){if(textSel.value&&b.t!==textSel.value)return false;const t=IDX.texts[b.t];if(!t)return true;
+// Corpus-wide category filter, orthogonal to the per-text "Text" dropdown (which exposes each
+// text's OWN section field, e.g. mula/bhashya/intro, only once that one text is selected). "tika"
+// groups the 12 anandagiri-* texts PLUS bg-bhashya's own (older, PDF-sourced) anandagiri section —
+// same underlying work, two independent digitizations. "prakarana" matches the site's own grouping
+// (whole-text, not split by internal mula/bhashya — Hastāmalakīya has both but is grouped here as
+// one unit, same as advaitasharada's own display/prakarana/ URL section). Vārtika texts (no section
+// field at all) and BG's anubhuti/bhashyarka sections have no bucket — only visible under "all
+// texts", since neither fits mūla/bhāṣya/ṭīkā/prakaraṇa cleanly.
+const TIKA_PREFIX='anandagiri-';
+const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedantasiddhantasarasangraha','vivekacudamani']);
+function blockCategory(b){
+ if(b.t.startsWith(TIKA_PREFIX))return 'tika';
+ if(PRAKARANA_TEXTS.has(b.t))return 'prakarana';
+ if(b.t==='bg-bhashya'){
+   if(b.c.section==='anandagiri')return 'tika';
+   if(b.c.section==='mula')return 'mula';
+   if(b.c.section==='bhashya')return 'bhashya';
+   return null;
+ }
+ const sec=b.c.section;
+ if(sec==='mula')return 'mula';
+ if(sec==='bhashya'||sec==='intro')return 'bhashya';
+ return null;
+}
+function passFilters(b){if(textSel.value&&b.t!==textSel.value)return false;
+ const catSel=document.getElementById('category').value;
+ if(catSel&&blockCategory(b)!==catSel)return false;
+ const t=IDX.texts[b.t];if(!t)return true;
  for(const el of document.querySelectorAll('#filters [data-k]')){const val=el.value.trim();if(!val)continue;
    const k=el.dataset.k,f=t.fields.find(x=>x.k===k),cv=b.c[k];
    if(f.type==='vrange'){const v=+val;if(!(Array.isArray(cv)&&cv[0]!=null&&cv[0]<=v&&cv[1]>=v))return false;}
