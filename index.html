@@ -1,0 +1,297 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Sanskrit Search</title>
+<style>
+ body{font-family:system-ui,sans-serif;margin:0;background:#faf9f7;color:#222}
+ header{background:#3a2f2a;color:#fff;padding:12px 18px}
+ header h1{margin:0;font-size:18px;font-weight:600}
+ header small{opacity:.85;font-weight:400}
+ .bar{padding:14px 18px;background:#fff;border-bottom:1px solid #ddd;position:sticky;top:0;z-index:5}
+ .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+ #q{flex:1;min-width:240px;font-size:20px;padding:9px 12px;border:1px solid #bbb;border-radius:6px}
+ select,input{font-size:15px;padding:7px;border:1px solid #bbb;border-radius:6px}
+ label{font-size:12px;color:#555;display:block;margin-bottom:2px}
+ .f{display:flex;flex-direction:column}
+ #filters{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
+ #status{padding:8px 18px;color:#666;font-size:13px}
+ #results{padding:0 18px 40px}
+ .hit{background:#fff;border:1px solid #e3e0da;border-radius:8px;padding:10px 14px;margin:10px 0}
+ .meta{font-size:12px;color:#7a6a55;margin-bottom:5px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+ .meta b{color:#3a2f2a}
+ .snip{font-size:19px;line-height:1.75}
+ .snip mark{background:#ffe08a;padding:0 2px}
+ .copy{font-size:12px;color:#217a3c;cursor:pointer;border:1px solid #bfe3c8;border-radius:4px;padding:1px 8px;background:#f2fbf5}
+ .advaita{font-size:12px;color:#8a5a00;text-decoration:none;border:1px solid #f0d999;border-radius:4px;padding:1px 8px;background:#fff8e8}
+ .advaita:hover{background:#fff0cc}
+ .note{font-size:12px;color:#888;margin-top:8px}
+ .hit.possible{border-color:#f0d999;background:#fffdf5}
+ .possible-badge{font-size:11px;color:#b45309;border:1px solid #f0d999;border-radius:4px;padding:0 6px;background:#fff6e0}
+ .toggle{display:flex;align-items:center;gap:5px;font-size:14px;color:#333;padding-bottom:7px}
+ .section-div{margin:18px 18px 6px;padding-top:10px;border-top:1px dashed #e0d3a8;font-size:13px;color:#b45309;font-weight:600}
+</style></head><body>
+<header><h1>Sanskrit Search <small>— ITRANS or Devanāgarī; orthography-, space- & sandhi-tolerant</small></h1></header>
+<div class="bar">
+ <div class="row">
+   <input id="q" placeholder="search…  e.g.  devaH  or  देवः  or  saMskriya" autofocus>
+   <button onclick="run()" style="font-size:16px;padding:9px 16px">Search</button>
+   <div class="f"><label>Text</label><select id="text"></select></div>
+   <div class="f"><label>Match</label><select id="mode">
+      <option value="sandhi" selected>sandhi-tolerant (high-recall)</option>
+      <option value="cooccur">words in same sentence</option>
+      <option value="exact">exact</option></select></div>
+   <label class="toggle"><input type="checkbox" id="showPossible" checked> show possible matches</label>
+ </div>
+ <div id="filters"></div>
+ <div class="note">Devanāgarī preview: <span id="prev" style="font-size:17px"></span></div>
+</div>
+<div id="status">loading…</div>
+<div id="results"></div>
+
+<script src="index_data.js"></script>
+<script src="lib/sanskrit-search.js"></script>
+<script>
+// All normalization / sandhi / matching / highlighting lives in the library (lib/sanskrit-search.js).
+// This page owns only the UI: index load, per-text filters, and rendering.
+const SS=window.SanskritSearch;
+const IDX=window.SEARCH_INDEX, B=IDX.blocks;
+for(const b of B){b._n=SS.normalize(b.s);b._nc=SS.normalize(b.s,true);}   // precompute normalized forms once
+const textSel=document.getElementById('text');
+textSel.innerHTML='<option value="">All texts</option>'+
+ Object.entries(IDX.texts).map(([id,t])=>`<option value="${id}">${t.title}</option>`).join('');
+function curText(){return IDX.texts[textSel.value];}
+function buildFilters(){const t=curText(),cont=document.getElementById('filters');cont.innerHTML='';if(!t)return;
+ for(const f of t.fields){let ctrl;
+   if(f.type==='enum')ctrl=`<select data-k="${f.k}"><option value="">any</option>`+
+     Object.entries(f.values).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')+`</select>`;
+   else ctrl=`<input data-k="${f.k}" type="${f.type==='str'?'text':'number'}" placeholder="any" style="width:95px">`;
+   cont.innerHTML+=`<div class="f"><label>${f.label}</label>${ctrl}</div>`;}
+ cont.querySelectorAll('[data-k]').forEach(el=>el.addEventListener('change',run));}
+textSel.onchange=()=>{buildFilters();run();};
+document.getElementById('mode').onchange=run;
+document.getElementById('showPossible').onchange=run;
+document.getElementById('q').addEventListener('input',e=>{document.getElementById('prev').textContent=SS.toDeva(e.target.value);});
+document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')run();});
+function passFilters(b){if(textSel.value&&b.t!==textSel.value)return false;const t=IDX.texts[b.t];if(!t)return true;
+ for(const el of document.querySelectorAll('#filters [data-k]')){const val=el.value.trim();if(!val)continue;
+   const k=el.dataset.k,f=t.fields.find(x=>x.k===k),cv=b.c[k];
+   if(f.type==='vrange'){const v=+val;if(!(Array.isArray(cv)&&cv[0]!=null&&cv[0]<=v&&cv[1]>=v))return false;}
+   else if(f.type==='enum'){if(cv!==val)return false;}
+   else if(f.type==='int'){if(cv!=+val)return false;}
+   else{if(String(cv)!==val)return false;}} return true;}
+function locStr(b){const t=IDX.texts[b.t],parts=[];
+ if(!textSel.value)parts.push('<b>'+t.title.split('(')[0].trim()+'</b>');
+ for(const f of t.fields){let cv=b.c[f.k];if(cv==null||cv==='')continue;
+   if(f.type==='vrange')cv=Array.isArray(cv)?(cv[0]===cv[1]?cv[0]:cv[0]+'-'+cv[1]):cv;
+   if(f.type==='enum')cv=(f.values[cv]||cv);parts.push(`${f.label} <b>${cv}</b>`);}
+ return parts.join(' · ');}
+function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+// Deep-link to the source text on advaitasharada.sringeri.net, per text. `pageField` names the
+// c-field whose value IS the site's own ?page=N (these were extracted directly from each site
+// page's own id-prefix when the corpus was ingested — see build_html_index.py — so no traditional-
+// vs-site-numbering translation is needed, e.g. Muṇḍaka's 3 site-pages already ARE field "mundaka"
+// 1/2/3). Omit pageField for genuinely single-page texts. `bySection` (BG only) maps this
+// project's `section` values to the site's own `vyakhya=` sub-commentary codes — BG's bhāṣya text
+// itself comes from the scanned PDF (not this site), but per Harsha (2026-08-08) the plain
+// Śaṅkara-bhāṣya and Ānandagiri-ṭīkā layers both also independently exist on advaitasharada;
+// Anubhūtisvarūpācārya-ṭippaṇam and Bhāṣyārka-prakāśa (by Rāmarāya-kavi) don't, so those sections
+// get no link at all (returning null from advaitasharadaLink).
+//
+// `anchor` builds a verse-level `id=` param (found 2026-08-09: Harsha pointed out a "yadā yadā"
+// search only jumped to the whole chapter, whereas advaitasharada's OWN search deep-links to
+// e.g. `id=BG_C04_V07_B01`). Verified live against each source text's own downloaded HTML: every
+// leaf node's id is `{prefix}_C{chapter}[_S{sub}]_{leafLetter}{leaf}_{blockLetter}{block}`, ALWAYS
+// defaulting to block 1 (our own data has no per-block granularity — a verse whose bhāṣya spans
+// multiple site blocks only gets the first one, still far better than the whole-chapter link).
+// Two confirmed irregularities, not a uniform scheme: Brahma-sūtra's block suffix is unpadded
+// (`_B1`, not `_B01`) despite 2-digit chapter/sūtra padding everywhere else; Māṇḍūkya's leaf
+// letter is `K` (kārikā), not `V`. For BG specifically, a `verse` field spanning a RANGE (Śaṅkara
+// commenting on several mūla verses in one continuous paragraph) uses verse[1] (the LAST verse in
+// the range) as the anchor, not verse[0] — the site splits its OWN blocks strictly per-verse, not
+// matching our PDF-paragraph boundaries, and a combined block's substance skews toward whichever
+// verse it's transitioning INTO (a short backward-reference to the prior verse, then straight into
+// quoting the new one) — confirmed live: our combined [6,7] bhāṣya block's "यदा यदा" text is really
+// under the site's own V07 block, matching verse[1]=7, not verse[0]=6. Still a heuristic, not
+// guaranteed exact for every combined-range block. Texts with no
+// `anchor` entry (brihad-vartika and the 3 verse-
+// only minor works whose HTML has no per-verse id at all) fall back to the page-level link only.
+function pad(n,w){return String(n).padStart(w,'0');}
+const ADVAITASHARADA = {
+ 'aitareya-bhashya': {slug:'Aitareya', path:'bhashyaVyakhya', pageField:'adhyaya',
+   anchor:{prefix:'AI', sField:'khanda', leafField:'mantra', leafLetter:'V'}},
+ // path 'bhashya' confirmed byte-identical to 'bhashyaVyakhya' (both serve the same page) — using
+ // 'bhashya' anyway to match the site's own search-generated links exactly, per Harsha (2026-08-09).
+ // anandagiri: the generic bhashya/vyakhya=AA route DOES place real Ānandagiri text at the right
+ // id server-side (verified directly), but the panel stays visually collapsed in-browser and the
+ // page's own hlBhashya logic doesn't reliably expand it (confirmed live, Harsha 2026-08-09: no
+ // scroll at all with hlBhashya=, and no visible ṭīkā even without it). The dedicated splitWindow
+ // popup (`display/splitWindow/{slug}/AG/{id}/devanagari` — id as a PATH segment, not a query
+ // param, no page= needed) reliably shows the right content instead — built via advaitasharadaLink's
+ // special-case branch below. Its own JS never references hlBhashya at all (byte-identical
+ // response with or without it), so no highlight param is sent for this section.
+ 'bg-bhashya': {slug:'Gita', path:'bhashya', pageField:'chapter',
+   bySection:{bhashya:{blockLetter:'B'}, anandagiri:{splitWindow:'AG', blockLetter:'I'}, mula:{}},
+   anchor:{prefix:'BG', leafField:'verse', leafLetter:'V'}},
+ 'brahmasutra-bhashya': {slug:'BS', path:'bhashyaVyakhya', pageField:'adhyaya',
+   anchor:{prefix:'BS', sField:'pada', leafField:'sutra', leafLetter:'V', blockPad:1}},
+ 'brihad-bhashya': {slug:'Brha', path:'bhashyaVyakhya', pageField:'adhyaya',
+   anchor:{prefix:'BR', sField:'brahmana', leafField:'mantra', leafLetter:'V'}},
+ // Indexed directly from the site's own vārtika page (build_vartika_index.py), same reasoning as
+ // the anandagiri-* texts below — every block already carries its own real id (c.vdId).
+ 'brihad-vartika': {slug:'brihadaranyakabhashya-vartika', path:'vyakhya'},
+ 'chandogya-bhashya': {slug:'Chandogya', path:'bhashyaVyakhya', pageField:'adhyaya',
+   anchor:{prefix:'Ch', sField:'khanda', leafField:'mantra', leafLetter:'V'}},
+ 'hastamalakiya-bhashya': {slug:'hastamalakiya-bhashya', path:'prakarana',
+   anchor:{prefix:'HB', leafField:'verse', leafLetter:'V'}},
+ 'isha-bhashya': {slug:'Isha', path:'bhashyaVyakhya', pageField:'adhyaya',
+   anchor:{prefix:'IS', leafField:'mantra', leafLetter:'V'}},
+ 'katha-bhashya': {slug:'Kathaka', path:'bhashyaVyakhya', pageField:'adhyaya',
+   anchor:{prefix:'Ka', sField:'valli', leafField:'mantra', leafLetter:'V'}},
+ 'kena-pada-bhashya': {slug:'Kena_pada', path:'bhashyaVyakhya', pageField:'khanda',
+   anchor:{prefix:'KP', leafField:'mantra', leafLetter:'V'}},
+ 'kena-vakya-bhashya': {slug:'Kena_vakya', path:'bhashyaVyakhya', pageField:'khanda',
+   anchor:{prefix:'KV', leafField:'mantra', leafLetter:'V'}},
+ 'mandukya-bhashya': {slug:'Mandukya', path:'bhashyaVyakhya', pageField:'prakarana',
+   anchor:{prefix:'MK', leafField:'mantra', leafLetter:'K'}},
+ 'mundaka-bhashya': {slug:'Mundaka', path:'bhashyaVyakhya', pageField:'mundaka',
+   anchor:{prefix:'MD', sField:'khanda', leafField:'mantra', leafLetter:'V'}},
+ 'prashna-bhashya': {slug:'Prashna', path:'bhashyaVyakhya', pageField:'prashna',
+   anchor:{prefix:'PR', leafField:'mantra', leafLetter:'V'}},
+ 'sarvavedantasiddhantasarasangraha': {slug:'sarvavedantasiddhantasarasangraha', path:'prakarana'},
+ 'shatashloki': {slug:'shatashloki', path:'prakarana'},
+ 'taittiriya-bhashya': {slug:'Taitiriya', path:'bhashyaVyakhya', pageField:'valli',
+   anchor:{prefix:'T', sField:'anuvaka', leafField:'mantra', leafLetter:'V'}},
+ 'vivekacudamani': {slug:'vivekachudamani', path:'prakarana',
+   anchor:{prefix:'VC', leafField:'verse', leafLetter:'V', leafPad:3, blockPad:null}},
+ // Ānandagiri-ṭīkā texts (build_anandagiri_index.py) — indexed directly from advaitasharada's own
+ // dedicated per-text pages (display/vyakhya/anandagiri-<slug>/devanagari), each citing a specific
+ // bhāṣya SUB-block (e.g. BG_C04_V07_B02) at a granularity our own bhāṣya data doesn't track, with
+ // a globally-sequential id suffix (_VD00001 etc.) that isn't derivable at all — no anchor scheme
+ // needed here since every block already carries its own exact, real id (c.vdId). No pageField —
+ // each of these is a single flat page (up to ~7MB for Bṛhadāraṇyaka) covering the WHOLE text.
+ // NOTE: the site's own URL slugs here are case/spelling-specific and do NOT all match this
+ // project's usual lowercase-hyphenated tid convention (confirmed live — the wrong slug still
+ // returns HTTP 200 but a ~7KB empty fallback page instead of the real multi-MB content).
+ 'anandagiri-gita': {slug:'anandagiri-gita', path:'vyakhya'},
+ 'anandagiri-aitareya': {slug:'anandagiri-Aitareya', path:'vyakhya'},
+ 'anandagiri-brihad': {slug:'anandagiri-Brha', path:'vyakhya'},
+ 'anandagiri-chandogya': {slug:'anandagiri-Chandogya', path:'vyakhya'},
+ 'anandagiri-isha': {slug:'anandagiri-Isha', path:'vyakhya'},
+ 'anandagiri-katha': {slug:'anandagiri-Kathaka', path:'vyakhya'},
+ 'anandagiri-kena-pada': {slug:'anandagiri-Kena_pada', path:'vyakhya'},
+ 'anandagiri-kena-vakya': {slug:'anandagiri-Kena_vakya', path:'vyakhya'},
+ 'anandagiri-mandukya': {slug:'anandagiri-Mandukya', path:'vyakhya'},
+ 'anandagiri-mundaka': {slug:'anandagiri-Mundaka', path:'vyakhya'},
+ 'anandagiri-prashna': {slug:'anandagiri-Prashna', path:'vyakhya'},
+ 'anandagiri-taittiriya': {slug:'anandagiri-Taittiriya', path:'vyakhya'},
+ 'taittiriya-vartika': {slug:'taittiriya-vartika', path:'vyakhya'},
+};
+// blockLetter/blockPad default to 'B'/2 (the common case) unless overridden per-text or per-section.
+// A "mula" hit is ALWAYS the bare verse-level id with no block suffix at all, regardless of any
+// per-text/per-section default — confirmed live (e.g. Aitareya's own downloaded page has both
+// `id="AI_C01_S01_V01"` wrapping the mūla `versetext` div AND a nested `..._B01` for its bhāṣya
+// child; BG's bhashyaVyakhya page likewise has a bare `BG_C04_V07` alongside `..._I01`), so this
+// overrides whatever blockPad the text/section would otherwise use.
+function buildAnchorId(cfg,secOverride,b){
+ const a=cfg.anchor; if(!a)return null;
+ const chVal=cfg.pageField?b.c[cfg.pageField]:null;
+ if(cfg.pageField&&chVal==null)return null;
+ let leafVal=b.c[a.leafField]; if(Array.isArray(leafVal))leafVal=leafVal[leafVal.length-1];
+ if(leafVal==null)return null;
+ let id=a.prefix;
+ if(cfg.pageField)id+=`_C${pad(chVal,2)}`;
+ if(a.sField){const sv=b.c[a.sField]; if(sv==null)return null; id+=`_S${pad(sv,2)}`;}
+ id+=`_${a.leafLetter}${pad(leafVal,a.leafPad||2)}`;
+ const blockPad=b.c.section==='mula'?null:((secOverride&&'blockPad' in secOverride)?secOverride.blockPad:('blockPad' in a?a.blockPad:2));
+ if(blockPad!=null){
+   const blockLetter=(secOverride&&secOverride.blockLetter)||a.blockLetter||'B';
+   id+=`_${blockLetter}${pad(1,blockPad)}`;
+ }
+ return id;
+}
+// matchedText: the actual sandhi-surface substring of THIS block that matched (from SS.snippet's
+// M1/M2 span, not the user's typed query — a sandhi/stem-tolerant search can match a query that
+// never literally appears in the running text, so the query itself would be the wrong string to
+// send). advaitasharada's own client-side JS (public/js/common.js) does a literal regex search
+// for whatever's in hl=/hlBhashya= within the target element, so it must be a real substring.
+// Confirmed live: `hl=` highlights inside the bare verse's `.versetext` (insertHlText); `hlBhashya=`
+// highlights inside whatever `id=` element was given (insertHlTextBhashya — works generically for
+// any block, confirmed it isn't tied to the `bhashya` CSS class specifically, so it also applies
+// to Ānandagiri's `_I01` blocks, not just Śaṅkara's own `_B01`). Both require `id=` to already be
+// present — the site's own code never even looks at hl/hlBhashya without it.
+function advaitasharadaLink(b,matchedText){
+ const cfg=ADVAITASHARADA[b.t]; if(!cfg)return null;
+ let vyakhya=cfg.vyakhya||null, secOverride=null;
+ if(cfg.bySection){secOverride=cfg.bySection[b.c.section]; if(!secOverride)return null; vyakhya=secOverride.vyakhya||null;}
+ // "intro" blocks (chapter-level maṅgala-śloka/etymological preambles, outside any verse) carry
+ // their own raw HTML id verbatim (build_html_index.py's introId) — bypass the verse/leaf anchor
+ // scheme entirely, since intro content has no mantra/verse number to build one from at all. Same
+ // idea for the anandagiri-* texts' own vdId (build_anandagiri_index.py) — those are indexed
+ // DIRECTLY from advaitasharada's own Ānandagiri-ṭīkā pages specifically so every id is real and
+ // exact, sidestepping the cross-referencing problem entirely (see ADVAITASHARADA comment below).
+ const anchorId=b.c.vdId||b.c.introId||buildAnchorId(cfg,secOverride,b);
+ // splitWindow (BG Ānandagiri only): a structurally different URL shape — id is a PATH segment,
+ // not a query param, no page=/vyakhya= involved, and its own JS never reads a highlight param at
+ // all — see the bySection comment above for why this route is used instead of the generic one.
+ if(secOverride&&secOverride.splitWindow){
+   if(!anchorId)return null;
+   return `https://advaitasharada.sringeri.net/display/splitWindow/${cfg.slug}/${secOverride.splitWindow}/${anchorId}/devanagari`;
+ }
+ let url=`https://advaitasharada.sringeri.net/display/${cfg.path}/${cfg.slug}/devanagari`;
+ const qs=[];
+ if(cfg.pageField&&b.c[cfg.pageField]!=null)qs.push('page='+b.c[cfg.pageField]);
+ if(vyakhya)qs.push('vyakhya='+vyakhya);
+ if(anchorId){
+   qs.push('id='+anchorId);
+   if(matchedText){
+     // Confirmed live (Harsha, 2026-08-09): the site's own search-generated links use hlBhashya=
+     // even for mūla hits — insertHlText's plain `hl=` param does NOT reliably work in practice,
+     // despite public/js/common.js defining it as a separate code path. Always hlBhashya.
+     qs.push('hlBhashya='+encodeURIComponent(matchedText));
+   }
+ }
+ if(qs.length)url+='?'+qs.join('&');
+ return url;
+}
+function renderHit(b,possible,useEx){
+ const rawSnip=SS.snippet(b,useEx);
+ const snip=esc(rawSnip).replaceAll(SS.M1,'<mark>').replaceAll(SS.M2,'</mark>');
+ const m1i=rawSnip.indexOf(SS.M1), m2i=rawSnip.indexOf(SS.M2);
+ const matchedText=(m1i!==-1&&m2i!==-1)?rawSnip.slice(m1i+1,m2i):null;
+ const cp=`<span class="copy" onclick="navigator.clipboard.writeText(this.dataset.c);this.textContent='copied ✓'" data-c="${esc(b.s)}">copy text</span>`;
+ const asLink=advaitasharadaLink(b,matchedText);
+ const asA=asLink?`<a class="advaita" href="${esc(asLink)}" target="_blank" rel="noopener">advaitaśārada ↗</a>`:'';
+ const badge=possible?'<span class="possible-badge">possible</span>':'';
+ return `<div class="hit${possible?' possible':''}"><div class="meta">${locStr(b)} ${badge} ${cp} ${asA}</div><div class="snip">${snip}</div></div>`;
+}
+function run(){
+ const raw=document.getElementById('q').value.trim(),res=document.getElementById('results');res.innerHTML='';
+ if(!raw){document.getElementById('status').textContent='type a query';return;}
+ const mode=document.getElementById('mode').value;
+ const ex=SS.expandQuery(raw,mode);
+ if(!ex.qn){document.getElementById('status').textContent='—';return;}
+ const showPossible=document.getElementById('showPossible').checked;
+ // sandhi is ADDITIVE, same as the extension: precise hits, plus any EXTRA high-recall
+ // "possible" hits the wide pass alone catches (never the silent default — always labeled).
+ // Kept as two SEPARATE lists (not interleaved in corpus order) so precise results always group
+ // together first, with possible matches in their own section below — toggleable via the
+ // "show possible matches" checkbox, which skips the wide pass entirely when unchecked.
+ const exWide=(mode==='sandhi'&&showPossible)?SS.expandQuery(raw,'sandhi',true):null;
+ let preciseHits=[],possibleHits=[];
+ for(const b of B){
+   if(!passFilters(b))continue;
+   const precise=SS.matches(b,ex);
+   if(precise){preciseHits.push(b);continue;}
+   if(exWide&&SS.matches(b,exWide))possibleHits.push(b);
+   if(preciseHits.length+possibleHits.length>1000)break;
+ }
+ const total=preciseHits.length+possibleHits.length;
+ document.getElementById('status').textContent=`${total} hit${total!=1?'s':''} for “${ex.q}”`+
+   (possibleHits.length?`  (${preciseHits.length} precise + ${possibleHits.length} possible)`:'')+
+   (mode==='sandhi'?`  (stems: ${ex.stems.join(' + ')})`:'')+(total>1000?' (first 1000)':'');
+ let html=preciseHits.map(b=>renderHit(b,false,ex)).join('');
+ if(possibleHits.length){
+   html+=`<div class="section-div">possible matches (${possibleHits.length}) — sandhi-fusion guesses, not confirmed</div>`;
+   html+=possibleHits.map(b=>renderHit(b,true,exWide)).join('');
+ }
+ res.innerHTML=html;}
+buildFilters();
+document.getElementById('status').textContent=`ready — ${B.length.toLocaleString()} blocks across ${Object.keys(IDX.texts).length} texts. Type to search.`;
+</script></body></html>
