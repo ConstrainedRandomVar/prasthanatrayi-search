@@ -1,8 +1,9 @@
 # Prasthānatrayī Sandhi-Tolerant Search
 
 A free, static, offline-capable search tool over the Prasthānatrayī (Upaniṣads,
-Bhagavad Gītā, Brahma-sūtra) with Śaṅkara's bhāṣya, Ānandagirī's ṭīkā, and Sureśvara's
-vārtikas — 42,000+ searchable passages across 30 works.
+Bhagavad Gītā, Brahma-sūtra) with Śaṅkara's bhāṣya, Ānandagirī's ṭīkā, Sureśvara's
+vārtikas, and three further Bhagavad Gītā commentaries — 44,000+ searchable
+passages across 33 works.
 
 **Live**: https://constrainedrandomvar.github.io/prasthanatrayi-search/
 
@@ -23,6 +24,8 @@ the site supports it.
 - **Sureśvara's vārtikas** on Bṛhadāraṇyaka- and Taittirīya-bhāṣya.
 - Three shorter prakaraṇa works: Vivekacūḍāmaṇi, Hastāmalakīya (with bhāṣya),
   Śatashlokī, Sarva-vedānta-siddhānta-sāra-saṅgraha.
+- Three further Bhagavad Gītā commentaries: Madhusūdana Sarasvatī's
+  Gūḍhārtha-dīpikā, Śrīdhara Svāmī's Subodhinī, and Nīlakaṇṭha's Bhāvadīpa.
 
 ## Sources and attribution
 
@@ -35,8 +38,12 @@ the site supports it.
   edition maintained by Sringeri Śāradā Pīṭham — reproduced here for offline sandhi-
   tolerant search only; every result links back to the original page on their site for
   full context, further reading, and the authoritative text.
-- All underlying texts (mūla, bhāṣya, ṭīkā, vārtika) are ancient/pre-modern works in the
-  **public domain**.
+- Madhusūdana Sarasvatī's, Śrīdhara Svāmī's, and Nīlakaṇṭha's commentaries are sourced
+  from the **[IIT Kanpur Gita Supersite](https://www.gitasupersite.in/)**'s own API —
+  reproduced here for offline sandhi-tolerant search only; every result links back to
+  the corresponding verse page on their site.
+- All underlying texts (mūla, bhāṣya, ṭīkā, vārtika, and the further Gītā commentaries)
+  are ancient/pre-modern works in the **public domain**.
 - The search engine itself (`lib/sanskrit-search.js`) is original code from the
   [devanagari-rescue](https://github.com/ConstrainedRandomVar/devanagari-rescue) project.
 
