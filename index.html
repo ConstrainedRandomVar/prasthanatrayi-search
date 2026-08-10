@@ -284,14 +284,34 @@ function advaitasharadaLink(b,matchedText){
  if(qs.length)url+='?'+qs.join('&');
  return url;
 }
+// Gita Supersite (gitasupersite.in, IIT Kanpur) — Madhusūdana/Śrīdhara/Nīlakaṇṭha, fetched via
+// build_gitasupersite_index.js from the site's own API (a one-time, token-gated fetch — the read
+// API requires a Cloudflare-Turnstile-verified guest token, so this data was pulled once with a
+// human-obtained token, not scraped live). No query-param scheme found for pre-selecting which
+// commentary the reader shows (the /read route's own logic is lazy-loaded client-side JS not
+// visible in the static bundle), so this links to the bare verse page — Harsha picks the
+// commentary from its own toggle menu once there, rather than landing pre-selected.
+const GITA_SUPERSITE_TEXTS=new Set(['madhusudani-gita','sridhari-gita','nilakanthi-gita']);
+function gitaSupersiteLink(b){
+ if(!GITA_SUPERSITE_TEXTS.has(b.t))return null;
+ return `https://www.gitasupersite.in/read/srimad/${b.c.chapter}/${b.c.verse}`;
+}
+// Dispatches to whichever external source this block belongs to (advaitasharada or Gita
+// Supersite) — renderHit doesn't need to know which.
+function sourceLink(b,matchedText){
+ const gs=gitaSupersiteLink(b);
+ if(gs)return{url:gs,label:'gitasupersite'};
+ const as=advaitasharadaLink(b,matchedText);
+ return as?{url:as,label:'advaitaśārada'}:null;
+}
 function renderHit(b,possible,useEx){
  const rawSnip=SS.snippet(b,useEx);
  const snip=esc(rawSnip).replaceAll(SS.M1,'<mark>').replaceAll(SS.M2,'</mark>');
  const m1i=rawSnip.indexOf(SS.M1), m2i=rawSnip.indexOf(SS.M2);
  const matchedText=(m1i!==-1&&m2i!==-1)?rawSnip.slice(m1i+1,m2i):null;
  const cp=`<span class="copy" onclick="navigator.clipboard.writeText(this.dataset.c);this.textContent='copied ✓'" data-c="${esc(b.s)}">copy text</span>`;
- const asLink=advaitasharadaLink(b,matchedText);
- const asA=asLink?`<a class="advaita" href="${esc(asLink)}" target="_blank" rel="noopener">advaitaśārada ↗</a>`:'';
+ const src=sourceLink(b,matchedText);
+ const asA=src?`<a class="advaita" href="${esc(src.url)}" target="_blank" rel="noopener">${src.label} ↗</a>`:'';
  const badge=possible?'<span class="possible-badge">possible</span>':'';
  return `<div class="hit${possible?' possible':''}"><div class="meta">${locStr(b)} ${badge} ${cp} ${asA}</div><div class="snip">${snip}</div></div>`;
 }
