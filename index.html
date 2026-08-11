@@ -291,7 +291,10 @@ function advaitasharadaLink(b,matchedText){
 // commentary the reader shows (the /read route's own logic is lazy-loaded client-side JS not
 // visible in the static bundle), so this links to the bare verse page — Harsha picks the
 // commentary from its own toggle menu once there, rather than landing pre-selected.
-const GITA_SUPERSITE_TEXTS=new Set(['madhusudani-gita','sridhari-gita','nilakanthi-gita']);
+// Commentator name shown in the link label — the Reader page always opens on its own default
+// commentary tab (confirmed 2026-08-11 by reading its JS bundle: no URL param selects one), so the
+// label says which tab to click rather than implying it'll land pre-selected.
+const GITA_SUPERSITE_TEXTS=new Map([['madhusudani-gita','Madhusūdana'],['sridhari-gita','Śrīdhara'],['nilakanthi-gita','Nīlakaṇṭha']]);
 function gitaSupersiteLink(b){
  if(!GITA_SUPERSITE_TEXTS.has(b.t))return null;
  return `https://www.gitasupersite.in/read/srimad/${b.c.chapter}/${b.c.verse}`;
@@ -300,7 +303,7 @@ function gitaSupersiteLink(b){
 // Supersite) — renderHit doesn't need to know which.
 function sourceLink(b,matchedText){
  const gs=gitaSupersiteLink(b);
- if(gs)return{url:gs,label:'gitasupersite'};
+ if(gs)return{url:gs,label:`gitasupersite (select ${GITA_SUPERSITE_TEXTS.get(b.t)} tab)`};
  const as=advaitasharadaLink(b,matchedText);
  return as?{url:as,label:'advaitaśārada'}:null;
 }
