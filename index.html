@@ -37,7 +37,7 @@
       <option value="">all texts</option>
       <option value="mula">mūlam only</option>
       <option value="bhashya">bhāṣyam only</option>
-      <option value="tika">ṭīkās (Ānandagirī)</option>
+      <option value="tika">ṭīkās</option>
       <option value="prakarana">prakaraṇas</option></select></div>
    <div class="f"><label>Match</label><select id="mode">
       <option value="sandhi" selected>sandhi-tolerant (high-recall)</option>
@@ -78,16 +78,18 @@ document.getElementById('q').addEventListener('input',e=>{document.getElementByI
 document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')run();});
 // Corpus-wide category filter, orthogonal to the per-text "Text" dropdown (which exposes each
 // text's OWN section field, e.g. mula/bhashya/intro, only once that one text is selected). "tika"
-// groups the 12 anandagiri-* texts PLUS bg-bhashya's own (older, PDF-sourced) anandagiri section —
-// same underlying work, two independent digitizations. "prakarana" matches the site's own grouping
-// (whole-text, not split by internal mula/bhashya — Hastāmalakīya has both but is grouped here as
-// one unit, same as advaitasharada's own display/prakarana/ URL section). Vārtika texts (no section
-// field at all) and BG's anubhuti/bhashyarka sections have no bucket — only visible under "all
-// texts", since neither fits mūla/bhāṣya/ṭīkā/prakaraṇa cleanly.
+// groups the 12 anandagiri-* texts, bg-bhashya's own (older, PDF-sourced) anandagiri section (same
+// underlying work, two independent digitizations), and the three Gita-Supersite-sourced BG
+// commentaries (Madhusūdana/Śrīdhara/Nīlakaṇṭha — full independent ṭīkā works, same category as
+// Ānandagirī's). "prakarana" matches the site's own grouping (whole-text, not split by internal
+// mula/bhashya — Hastāmalakīya has both but is grouped here as one unit, same as advaitasharada's
+// own display/prakarana/ URL section). Vārtika texts (no section field at all, and a distinct genre
+// from ṭīkā) and BG's anubhuti/bhashyarka sections have no bucket — only visible under "all texts".
 const TIKA_PREFIX='anandagiri-';
 const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedantasiddhantasarasangraha','vivekacudamani']);
 function blockCategory(b){
  if(b.t.startsWith(TIKA_PREFIX))return 'tika';
+ if(GITA_SUPERSITE_TEXTS.has(b.t))return 'tika';
  if(PRAKARANA_TEXTS.has(b.t))return 'prakarana';
  if(b.t==='bg-bhashya'){
    if(b.c.section==='anandagiri')return 'tika';
