@@ -87,7 +87,7 @@ document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')r
 // own display/prakarana/ URL section). Vārtika texts (no section field at all, and a distinct genre
 // from ṭīkā) and BG's anubhuti/bhashyarka sections have no bucket — only visible under "all texts".
 const TIKA_PREFIX='anandagiri-';
-const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedantasiddhantasarasangraha','vivekacudamani','panchadashi-ramkrishna','dakshinamurti-stotra','siddhantabindu','naishkarmyasiddhi','vicharasagara','anubhutiprakasha']);
+const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedantasiddhantasarasangraha','vivekacudamani','panchadashi-ramkrishna','dakshinamurti-stotra','siddhantabindu','naishkarmyasiddhi','vicharasagara','anubhutiprakasha','upadeshasahasri']);
 // Vārtika-genre works (verse expositions of a bhāṣya). Previously bucketless ("only under all
 // texts"); now a category of their own. brihad-/taittiriya-vartika are indexed from advaitasharada;
 // brihadaranyaka-vartika-sara (Vidyāraṇya) is self-hosted from OCR.
@@ -201,7 +201,9 @@ const ADVAITASHARADA = {
  // the verse anchor is #SVS_<verse padded to 4> (confirmed live 2026-08-18: 0-1=vv.1-336,
  // 0-2=337-672, 0-3=673-1006). See advaitasharadaReadLink().
  'sarvavedantasiddhantasarasangraha': {readRoute:true, slug:'sarvavedantasiddhantasarasangraha', versesPerPage:336, idPrefix:'SVS', idPad:4, verseField:'verse'},
- 'shatashloki': {slug:'shatashloki', path:'prakarana'},
+ // /read/ route like SVS, but single-page: /read/shatashloki/0/?ul=<surface>#SH_<verse padded 3>
+ // (all 101 verses on page 0; confirmed live 2026-08-18). /display/prakarana didn't highlight.
+ 'shatashloki': {readRoute:true, slug:'shatashloki', idPrefix:'SH', idPad:3, verseField:'verse'},
  'taittiriya-bhashya': {slug:'Taitiriya', path:'bhashyaVyakhya', pageField:'valli',
    anchor:{prefix:'T', sField:'anuvaka', leafField:'mantra', leafLetter:'V'}},
  'vivekacudamani': {slug:'vivekachudamani', path:'prakarana',
@@ -267,9 +269,10 @@ function buildAnchorId(cfg,secOverride,b){
 // anchored by the fragment. Used for texts where /display/ doesn't highlight (e.g. SVS).
 function advaitasharadaReadLink(cfg,b,matchedText){
  const v=b.c[cfg.verseField]; if(v==null)return null;
- const page=Math.floor((v-1)/cfg.versesPerPage)+1;
+ // Paginated texts (versesPerPage set) use segment 0-<page>; single-page texts use just 0.
+ const seg=cfg.versesPerPage?`0-${Math.floor((v-1)/cfg.versesPerPage)+1}`:'0';
  const id=`${cfg.idPrefix}_${String(v).padStart(cfg.idPad,'0')}`;
- let url=`https://advaitasharada.sringeri.net/read/${cfg.slug}/0-${page}/`;
+ let url=`https://advaitasharada.sringeri.net/read/${cfg.slug}/${seg}/`;
  if(matchedText)url+=`?ul=${encodeURIComponent(matchedText)}`;
  return url+`#${id}`;
 }
@@ -349,6 +352,7 @@ const SELF_HOSTED={
  'naishkarmyasiddhi':{viewer:true,slug:'naishkarmyasiddhi',pageField:'page',label:'read',scanDir:'texts/naishkarmyasiddhi-scan'},
  'vicharasagara':{viewer:true,slug:'vicharasagara',pageField:'page',label:'read',scanDir:'texts/vicharasagara-scan'},
  'anubhutiprakasha':{viewer:true,slug:'anubhutiprakasha',pageField:'page',label:'read',scanDir:'texts/anubhutiprakasha-scan'},
+ 'upadeshasahasri':{viewer:true,slug:'upadeshasahasri',pageField:'page',label:'read',scanDir:'texts/upadeshasahasri-scan'},
  'bg-bhashya':{viewer:true,slug:'bg-bhashya',pageField:'page',sections:new Set(['bhashyarka','anubhuti']),label:'read',scanDir:'texts/bg-bhashya'},
 };
 function selfHostedShard(dir,slug,pg){
