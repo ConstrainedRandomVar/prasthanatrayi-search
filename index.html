@@ -315,8 +315,12 @@ const SELF_HOSTED_SIZE=40;
 // `dir` = primary PDF (readable, natively-searchable typeset text where we have it — see
 // build_panchadashi_readable.py — else the scan). `scanDir` = optional ORIGINAL scan, offered as a
 // secondary "verify" link since the typeset text reflects OCR. `label` names the primary link.
+// `viewer:true` → primary link is the self-hosted HTML viewer (viewer.html) which renders the clean
+// per-page text and HIGHLIGHTS the matched sandhi surface (far better than a PDF: real highlight,
+// native Ctrl-F, no alignment quirks). `scanDir` = original scan, offered as a secondary "verify"
+// link. `dir` (PDF shards) is the fallback for texts with no HTML viewer yet (e.g. BG bhāṣyārka).
 const SELF_HOSTED={
- 'panchadashi-ramkrishna':{dir:'texts/panchadashi',slug:'panchadashi',pageField:'page',label:'read',scanDir:'texts/panchadashi-scan'},
+ 'panchadashi-ramkrishna':{viewer:true,slug:'panchadashi',pageField:'page',label:'read',scanDir:'texts/panchadashi-scan'},
  'bg-bhashya':{dir:'texts/bg-bhashya',slug:'bg-bhashya',pageField:'page',sections:new Set(['bhashyarka','anubhuti']),label:'scan'},
 };
 function selfHostedShard(dir,slug,pg){
@@ -330,9 +334,13 @@ function selfHostedCfg(b){
  if(b.c[cfg.pageField]==null)return null;
  return cfg;
 }
-function selfHostedLink(b){
+function selfHostedLink(b,matchedText){
  const cfg=selfHostedCfg(b); if(!cfg)return null;
  const pg=b.c[cfg.pageField];
+ if(cfg.viewer){
+   const q=`text=${encodeURIComponent(b.t)}&page=${pg}`+(matchedText?`&hl=${encodeURIComponent(matchedText)}`:'');
+   return {url:`viewer.html?${q}`, label:`${cfg.label||'read'} p.${pg}`};
+ }
  return {url:selfHostedShard(cfg.dir,cfg.slug,pg), label:`${cfg.label||'scan'} p.${pg}`};
 }
 // Secondary original-scan link (only where a readable primary replaced the scan).
@@ -349,7 +357,7 @@ function sourceLink(b,matchedText){
  if(gs)return{url:gs,label:`gitasupersite (select ${GITA_SUPERSITE_TEXTS.get(b.t)} tab)`};
  const as=advaitasharadaLink(b,matchedText);
  if(as)return{url:as,label:'advaitaśārada'};
- const sh=selfHostedLink(b);
+ const sh=selfHostedLink(b,matchedText);
  return sh?{url:sh.url,label:sh.label}:null;
 }
 function renderHit(b,possible,useEx){

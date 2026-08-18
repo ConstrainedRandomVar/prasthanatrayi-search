@@ -1,0 +1,74 @@
+<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Text viewer — Sanskrit Search</title>
+<style>
+ body{font-family:system-ui,sans-serif;margin:0;background:#faf9f7;color:#222}
+ header{background:#3a2f2a;color:#fff;padding:10px 16px;position:sticky;top:0;z-index:5;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+ header a{color:#ffd9a8;text-decoration:none}
+ header .title{font-weight:600}
+ header .nav{margin-left:auto;display:flex;gap:8px;align-items:center}
+ header button,header input{font-size:14px;padding:5px 9px;border:1px solid #6b5a4e;border-radius:5px;background:#4a3d36;color:#fff}
+ header input{width:64px;text-align:center}
+ /* Reading column — real HTML text, so verse pādas keep their own lines and the browser handles
+    Devanāgarī shaping natively (font stack prefers Sanskrit-grade faces, falls back per device). */
+ #page{max-width:760px;margin:24px auto;padding:0 20px 60px;font-family:'Shobhika','Shree Devanagari 714','Kohinoor Devanagari','Noto Serif Devanagari','Noto Sans Devanagari',serif;
+   font-size:22px;line-height:2.05;color:#1a1a1a}
+ mark{background:#ffe08a;padding:0 1px;border-radius:2px}
+ mark.hl{background:#ffcf4d;box-shadow:0 0 0 3px #ffe9b0}
+ #status{color:#777;font-size:13px;padding:8px 20px;max-width:760px;margin:0 auto}
+</style></head><body>
+<header>
+ <a href="index.html">← search</a>
+ <span class="title" id="title">…</span>
+ <span class="nav">
+   <button id="prev">‹ prev</button>
+   <span style="color:#e8dccb;font-size:13px">page <input id="pageIn" type="number" min="1"></span>
+   <button id="next">next ›</button>
+   <a id="scanLink" href="#" target="_blank" rel="noopener" style="font-size:13px;display:none">scan ↗</a>
+ </span>
+</header>
+<div id="status">loading…</div>
+<div id="page"></div>
+<script>
+// Self-hosted HTML viewer for texts we host ourselves (no advaitasharada/gitasupersite home). Deep-
+// linked from search.html as viewer.html?text=<id>&page=<n>&hl=<matched-surface>. It renders the
+// clean per-page text (texts/<slug>/pages.js) and highlights the exact sandhi SURFACE that produced
+// the hit — the same matched substring search.html hands advaitasharada as hlBhashya. Whitespace-
+// tolerant match (the block/hl text collapsed spaces; the page text keeps newlines/multiple spaces),
+// so the highlight lands even across a line break. Better than the PDF: real highlight, native
+// Ctrl-F, no page-fit/alignment quirks. Scan of the same page stays one click away (scan ↗).
+const TEXTS={
+ 'panchadashi-ramkrishna':{title:'Pañcadaśī (Rāmakṛṣṇa-ṭīkā)', data:'texts/panchadashi/pages.js',
+   scanDir:'texts/panchadashi-scan', slug:'panchadashi', size:40},
+};
+const P=new URLSearchParams(location.search);
+const id=P.get('text'), hl=P.get('hl')||'';
+let page=Math.max(1,parseInt(P.get('page')||'1',10));
+const cfg=TEXTS[id];
+function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function reEsc(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+function go(p){const u=new URL(location.href);u.searchParams.set('page',p);u.searchParams.delete('hl');location.href=u.toString();}
+function render(){
+ const pages=(window.TEXT_PAGES||{})[id]||{};
+ const total=Object.keys(pages).length;
+ document.getElementById('title').textContent=cfg.title;
+ document.getElementById('pageIn').value=page; document.getElementById('pageIn').max=total;
+ // secondary scan link for this exact page (same 40-page shard arithmetic as search.html)
+ if(cfg.scanDir){const start=Math.floor((page-1)/cfg.size)*cfg.size+1,local=((page-1)%cfg.size)+1;
+   const a=document.getElementById('scanLink');a.href=`${cfg.scanDir}/${cfg.slug}-${String(start).padStart(4,'0')}.pdf#page=${local}`;a.style.display='';}
+ let raw=pages[String(page)];
+ if(raw==null){document.getElementById('status').textContent=`page ${page} not found`;document.getElementById('page').textContent='';return;}
+ document.getElementById('status').textContent=`page ${page} of ${total}`+(hl?` · highlighting “${hl}”`:'');
+ // highlight the matched surface: escape it, make each whitespace run match any whitespace (space,
+ // newline, multiple), wrap matches in sentinels on the RAW text, then escape + <br> + <mark>.
+ if(hl){try{const pat=new RegExp(reEsc(hl).replace(/\s+/g,'\\s+'),'g');raw=raw.replace(pat,m=>`\u0001${m}\u0002`);}catch(e){}}
+ let h=esc(raw).replace(/\n/g,'<br>').replace(/\u0001/g,'<mark class="hl">').replace(/\u0002/g,'</mark>');
+ document.getElementById('page').innerHTML=h;
+ const m=document.querySelector('mark.hl'); if(m)m.scrollIntoView({block:'center'});
+}
+document.getElementById('prev').onclick=()=>{if(page>1)go(page-1);};
+document.getElementById('next').onclick=()=>go(page+1);
+document.getElementById('pageIn').addEventListener('change',e=>{const v=parseInt(e.target.value,10);if(v>=1)go(v);});
+if(!cfg){document.getElementById('status').textContent='unknown text: '+id;}
+else{const s=document.createElement('script');s.src=cfg.data;s.onload=render;s.onerror=()=>{document.getElementById('status').textContent='could not load text data';};document.head.appendChild(s);}
+</script></body></html>

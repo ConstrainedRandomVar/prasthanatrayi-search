@@ -3,8 +3,8 @@
 // visitor opens are cached REACTIVELY on first fetch (so the first visit isn't doubled by a huge
 // precache). Bump CACHE_NAME whenever a shipped file changes — especially index_data.js after any
 // text is added/updated — so clients drop the stale cache and pick up the new data.
-const CACHE_NAME = 'sanskrit-search-v2';
-const ASSETS = ['./', './index.html', './lib/sanskrit-search.js'];
+const CACHE_NAME = 'sanskrit-search-v3';
+const ASSETS = ['./', './index.html', './viewer.html', './lib/sanskrit-search.js'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
