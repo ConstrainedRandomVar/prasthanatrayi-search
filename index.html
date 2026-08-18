@@ -446,5 +446,9 @@ document.getElementById('status').textContent=`ready — ${B.length.toLocaleStri
 // ~6.6 MB-gzipped index_data.js, the library, and any scan-PDF shards the visitor opens), so a
 // second visit is served from cache. Bump sw.js's CACHE_NAME on every deploy so clients pick up a
 // new index_data.js. Registered defensively — a failed registration never blocks search.
-if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
+if('serviceWorker' in navigator){
+  const hadController=!!navigator.serviceWorker.controller; let reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(hadController&&!reloaded){reloaded=true;location.reload();} });
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{}));
+}
 </script></body></html>
