@@ -6,6 +6,8 @@
     every device instead of depending on the visitor's system fonts. */
  @font-face{font-family:'Noto Serif Devanagari';font-style:normal;font-weight:400;font-display:swap;
    src:url('fonts/NotoSerifDevanagari-Regular.woff2') format('woff2');}
+ @font-face{font-family:'Noto Serif Devanagari';font-style:normal;font-weight:600;font-display:swap;
+   src:url('fonts/NotoSerifDevanagari-SemiBold.woff2') format('woff2');}
  body{font-family:system-ui,sans-serif;margin:0;background:#faf9f7;color:#222}
  header{background:#3a2f2a;color:#fff;padding:10px 16px;position:sticky;top:0;z-index:5;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
  header a{color:#ffd9a8;text-decoration:none}
@@ -28,6 +30,12 @@
  .lp-e .lp-l{flex:1 1 auto;border-bottom:1px dotted #b9b0a2;transform:translateY(-.28em);margin:0 4px}
  .lp-e .lp-p{flex:0 0 auto;color:#555}
  .layout .gap{margin-top:.9em}
+ .layout .big{font-size:1.3em;line-height:1.5}       /* mūla / headings — printed larger */
+ .layout .sm{font-size:.85em}                          /* fine-print notes */
+ hr.lp-r{border:0;border-top:1px solid #cbbfa8;width:38%;margin:.8em auto}
+ /* pratīka (mūla words quoted in commentary), from the PDF's own bold/italic runs (BG). */
+ .layout b{font-weight:600;color:#5a3e00}
+ .layout i{font-style:italic}
  mark{background:#ffe08a;padding:0 1px;border-radius:2px}
  mark.hl{background:#ffcf4d;box-shadow:0 0 0 3px #ffe9b0}
  #status{color:#777;font-size:13px;padding:8px 20px;max-width:760px;margin:0 auto}
