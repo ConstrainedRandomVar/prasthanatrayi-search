@@ -78,7 +78,8 @@ const TEXTS={
 // For these the page string is injected as HTML; the rest (e.g. bg-bhashya, built from index blocks)
 // stays flat text with <br>.
 const LAYOUT=new Set(['panchadashi-ramkrishna','dakshinamurti-stotra','brihadaranyaka-vartika-sara',
- 'siddhantabindu','naishkarmyasiddhi','vicharasagara','anubhutiprakasha','upadeshasahasri','vedantasara']);
+ 'siddhantabindu','naishkarmyasiddhi','vicharasagara','anubhutiprakasha','upadeshasahasri','vedantasara',
+ 'bg-bhashya']);
 const P=new URLSearchParams(location.search);
 const id=P.get('text'), hl=P.get('hl')||'';
 let page=Math.max(1,parseInt(P.get('page')||'1',10));

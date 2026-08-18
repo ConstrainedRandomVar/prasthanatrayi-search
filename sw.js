@@ -3,7 +3,7 @@
 // visitor opens are cached REACTIVELY on first fetch (so the first visit isn't doubled by a huge
 // precache). Bump CACHE_NAME whenever a shipped file changes — especially index_data.js after any
 // text is added/updated — so clients drop the stale cache and pick up the new data.
-const CACHE_NAME = 'sanskrit-search-v15';
+const CACHE_NAME = 'sanskrit-search-v16';
 const ASSETS = ['./', './index.html', './viewer.html', './lib/sanskrit-search.js', './fonts/NotoSerifDevanagari-Regular.woff2'];
 
 self.addEventListener('install', event => {
