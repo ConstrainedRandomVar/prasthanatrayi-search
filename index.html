@@ -321,7 +321,7 @@ const SELF_HOSTED_SIZE=40;
 // link. `dir` (PDF shards) is the fallback for texts with no HTML viewer yet (e.g. BG bhāṣyārka).
 const SELF_HOSTED={
  'panchadashi-ramkrishna':{viewer:true,slug:'panchadashi',pageField:'page',label:'read',scanDir:'texts/panchadashi-scan'},
- 'bg-bhashya':{dir:'texts/bg-bhashya',slug:'bg-bhashya',pageField:'page',sections:new Set(['bhashyarka','anubhuti']),label:'scan'},
+ 'bg-bhashya':{viewer:true,slug:'bg-bhashya',pageField:'page',sections:new Set(['bhashyarka','anubhuti']),label:'read',scanDir:'texts/bg-bhashya'},
 };
 function selfHostedShard(dir,slug,pg){
  const start=Math.floor((pg-1)/SELF_HOSTED_SIZE)*SELF_HOSTED_SIZE+1;

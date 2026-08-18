@@ -2,6 +2,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Text viewer — Sanskrit Search</title>
 <style>
+ /* Bundled Devanāgarī webfont (Noto Serif Devanagari, OFL) so the reading column looks identical on
+    every device instead of depending on the visitor's system fonts. */
+ @font-face{font-family:'Noto Serif Devanagari';font-style:normal;font-weight:400;font-display:swap;
+   src:url('fonts/NotoSerifDevanagari-Regular.woff2') format('woff2');}
  body{font-family:system-ui,sans-serif;margin:0;background:#faf9f7;color:#222}
  header{background:#3a2f2a;color:#fff;padding:10px 16px;position:sticky;top:0;z-index:5;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
  header a{color:#ffd9a8;text-decoration:none}
@@ -11,7 +15,7 @@
  header input{width:64px;text-align:center}
  /* Reading column — real HTML text, so verse pādas keep their own lines and the browser handles
     Devanāgarī shaping natively (font stack prefers Sanskrit-grade faces, falls back per device). */
- #page{max-width:760px;margin:24px auto;padding:0 20px 60px;font-family:'Shobhika','Shree Devanagari 714','Kohinoor Devanagari','Noto Serif Devanagari','Noto Sans Devanagari',serif;
+ #page{max-width:760px;margin:24px auto;padding:0 20px 60px;font-family:'Noto Serif Devanagari','Shobhika','Shree Devanagari 714','Kohinoor Devanagari',serif;
    font-size:22px;line-height:2.05;color:#1a1a1a}
  mark{background:#ffe08a;padding:0 1px;border-radius:2px}
  mark.hl{background:#ffcf4d;box-shadow:0 0 0 3px #ffe9b0}
@@ -40,6 +44,8 @@
 const TEXTS={
  'panchadashi-ramkrishna':{title:'Pañcadaśī (Rāmakṛṣṇa-ṭīkā)', data:'texts/panchadashi/pages.js',
    scanDir:'texts/panchadashi-scan', slug:'panchadashi', size:40},
+ 'bg-bhashya':{title:'Bhagavad-gītā Śāṅkara-bhāṣya (+ ṭīkās)', data:'texts/bg-bhashya/pages.js',
+   scanDir:'texts/bg-bhashya', slug:'bg-bhashya', size:40},
 };
 const P=new URLSearchParams(location.search);
 const id=P.get('text'), hl=P.get('hl')||'';
