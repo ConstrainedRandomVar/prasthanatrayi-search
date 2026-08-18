@@ -312,17 +312,34 @@ function gitaSupersiteLink(b){
 // self-hosts ONLY bhashyarka/anubhuti (the two sections that have no advaitasharada home; its
 // mula/bhashya/anandagiri keep their existing advaitasharada links via the dispatch order below).
 const SELF_HOSTED_SIZE=40;
+// `dir` = primary PDF (readable, natively-searchable typeset text where we have it — see
+// build_panchadashi_readable.py — else the scan). `scanDir` = optional ORIGINAL scan, offered as a
+// secondary "verify" link since the typeset text reflects OCR. `label` names the primary link.
 const SELF_HOSTED={
- 'panchadashi-ramkrishna':{dir:'texts/panchadashi',slug:'panchadashi',pageField:'page'},
- 'bg-bhashya':{dir:'texts/bg-bhashya',slug:'bg-bhashya',pageField:'page',sections:new Set(['bhashyarka','anubhuti'])},
+ 'panchadashi-ramkrishna':{dir:'texts/panchadashi',slug:'panchadashi',pageField:'page',label:'read',scanDir:'texts/panchadashi-scan'},
+ 'bg-bhashya':{dir:'texts/bg-bhashya',slug:'bg-bhashya',pageField:'page',sections:new Set(['bhashyarka','anubhuti']),label:'scan'},
 };
-function selfHostedLink(b){
- const cfg=SELF_HOSTED[b.t]; if(!cfg)return null;
- if(cfg.sections&&!cfg.sections.has(b.c.section))return null;
- const pg=b.c[cfg.pageField]; if(pg==null)return null;
+function selfHostedShard(dir,slug,pg){
  const start=Math.floor((pg-1)/SELF_HOSTED_SIZE)*SELF_HOSTED_SIZE+1;
  const local=((pg-1)%SELF_HOSTED_SIZE)+1;
- return {url:`${cfg.dir}/${cfg.slug}-${String(start).padStart(4,'0')}.pdf#page=${local}`, label:`scan p.${pg}`};
+ return `${dir}/${slug}-${String(start).padStart(4,'0')}.pdf#page=${local}`;
+}
+function selfHostedCfg(b){
+ const cfg=SELF_HOSTED[b.t]; if(!cfg)return null;
+ if(cfg.sections&&!cfg.sections.has(b.c.section))return null;
+ if(b.c[cfg.pageField]==null)return null;
+ return cfg;
+}
+function selfHostedLink(b){
+ const cfg=selfHostedCfg(b); if(!cfg)return null;
+ const pg=b.c[cfg.pageField];
+ return {url:selfHostedShard(cfg.dir,cfg.slug,pg), label:`${cfg.label||'scan'} p.${pg}`};
+}
+// Secondary original-scan link (only where a readable primary replaced the scan).
+function selfHostedScanLink(b){
+ const cfg=selfHostedCfg(b); if(!cfg||!cfg.scanDir)return null;
+ const pg=b.c[cfg.pageField];
+ return {url:selfHostedShard(cfg.scanDir,cfg.slug,pg), label:`scan p.${pg}`};
 }
 // Dispatches to whichever source this block belongs to (Gita Supersite, then advaitasharada, then a
 // self-hosted scan) — renderHit doesn't need to know which. Self-hosted is LAST so any external home
@@ -343,8 +360,12 @@ function renderHit(b,possible,useEx){
  const cp=`<span class="copy" onclick="navigator.clipboard.writeText(this.dataset.c);this.textContent='copied ✓'" data-c="${esc(b.s)}">copy text</span>`;
  const src=sourceLink(b,matchedText);
  const asA=src?`<a class="advaita" href="${esc(src.url)}" target="_blank" rel="noopener">${src.label} ↗</a>`:'';
+ // Secondary original-scan link, shown only when the primary is a readable typeset re-render (so the
+ // reader can verify the OCR against the actual page image).
+ const scan=selfHostedScanLink(b);
+ const scanA=(scan&&(!src||src.url!==scan.url))?`<a class="advaita" href="${esc(scan.url)}" target="_blank" rel="noopener">${scan.label} ↗</a>`:'';
  const badge=possible?'<span class="possible-badge">possible</span>':'';
- return `<div class="hit${possible?' possible':''}"><div class="meta">${locStr(b)} ${badge} ${cp} ${asA}</div><div class="snip">${snip}</div></div>`;
+ return `<div class="hit${possible?' possible':''}"><div class="meta">${locStr(b)} ${badge} ${cp} ${asA} ${scanA}</div><div class="snip">${snip}</div></div>`;
 }
 function run(){
  const raw=document.getElementById('q').value.trim(),res=document.getElementById('results');res.innerHTML='';
