@@ -87,7 +87,7 @@ document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')r
 // own display/prakarana/ URL section). Vārtika texts (no section field at all, and a distinct genre
 // from ṭīkā) and BG's anubhuti/bhashyarka sections have no bucket — only visible under "all texts".
 const TIKA_PREFIX='anandagiri-';
-const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedantasiddhantasarasangraha','vivekacudamani','panchadashi-ramkrishna','dakshinamurti-stotra','siddhantabindu','naishkarmyasiddhi','vicharasagara','anubhutiprakasha','upadeshasahasri']);
+const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedantasiddhantasarasangraha','vivekacudamani','panchadashi-ramkrishna','dakshinamurti-stotra','siddhantabindu','naishkarmyasiddhi','vicharasagara','anubhutiprakasha','upadeshasahasri','vedantasara']);
 // Vārtika-genre works (verse expositions of a bhāṣya). Previously bucketless ("only under all
 // texts"); now a category of their own. brihad-/taittiriya-vartika are indexed from advaitasharada;
 // brihadaranyaka-vartika-sara (Vidyāraṇya) is self-hosted from OCR.
@@ -353,6 +353,7 @@ const SELF_HOSTED={
  'vicharasagara':{viewer:true,slug:'vicharasagara',pageField:'page',label:'read',scanDir:'texts/vicharasagara-scan'},
  'anubhutiprakasha':{viewer:true,slug:'anubhutiprakasha',pageField:'page',label:'read',scanDir:'texts/anubhutiprakasha-scan'},
  'upadeshasahasri':{viewer:true,slug:'upadeshasahasri',pageField:'page',label:'read',scanDir:'texts/upadeshasahasri-scan'},
+ 'vedantasara':{viewer:true,slug:'vedantasara',pageField:'page',label:'read',scanDir:'texts/vedantasara-scan'},
  'bg-bhashya':{viewer:true,slug:'bg-bhashya',pageField:'page',sections:new Set(['bhashyarka','anubhuti']),label:'read',scanDir:'texts/bg-bhashya'},
 };
 function selfHostedShard(dir,slug,pg){
