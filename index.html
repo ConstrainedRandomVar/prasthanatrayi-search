@@ -86,7 +86,7 @@ document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')r
 // own display/prakarana/ URL section). Vārtika texts (no section field at all, and a distinct genre
 // from ṭīkā) and BG's anubhuti/bhashyarka sections have no bucket — only visible under "all texts".
 const TIKA_PREFIX='anandagiri-';
-const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedantasiddhantasarasangraha','vivekacudamani']);
+const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedantasiddhantasarasangraha','vivekacudamani','panchadashi-ramkrishna']);
 function blockCategory(b){
  if(b.t.startsWith(TIKA_PREFIX))return 'tika';
  if(GITA_SUPERSITE_TEXTS.has(b.t))return 'tika';
