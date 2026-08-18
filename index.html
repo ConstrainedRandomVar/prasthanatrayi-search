@@ -373,7 +373,8 @@ function renderHit(b,possible,useEx){
  const scan=selfHostedScanLink(b);
  const scanA=(scan&&(!src||src.url!==scan.url))?`<a class="advaita" href="${esc(scan.url)}" target="_blank" rel="noopener">${scan.label} ↗</a>`:'';
  const badge=possible?'<span class="possible-badge">possible</span>':'';
- return `<div class="hit${possible?' possible':''}"><div class="meta">${locStr(b)} ${badge} ${cp} ${asA} ${scanA}</div><div class="snip">${snip}</div></div>`;
+ // scan (verify) link first, primary read/source link rightmost (Harsha, 2026-08-18).
+ return `<div class="hit${possible?' possible':''}"><div class="meta">${locStr(b)} ${badge} ${cp} ${scanA} ${asA}</div><div class="snip">${snip}</div></div>`;
 }
 function run(){
  const raw=document.getElementById('q').value.trim(),res=document.getElementById('results');res.innerHTML='';
