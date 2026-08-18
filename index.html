@@ -301,13 +301,39 @@ function gitaSupersiteLink(b){
  if(!GITA_SUPERSITE_TEXTS.has(b.t))return null;
  return `https://www.gitasupersite.in/read/srimad/${b.c.chapter}/${b.c.verse}`;
 }
-// Dispatches to whichever external source this block belongs to (advaitasharada or Gita
-// Supersite) — renderHit doesn't need to know which.
+// Self-hosted scans — texts (or sections) with NO external home on advaitasharada/gitasupersite,
+// whose PDF we host in this repo under texts/<slug>/ and deep-link per page via the browser PDF
+// viewer's #page=N fragment. The source scan is sharded into fixed SELF_HOSTED_SIZE-page PDFs
+// (build_pdf_shards.py) so a "view scan" click pulls one small shard, not the whole 40+ MB book —
+// this arithmetic MUST mirror that script exactly: block page P lives in shard starting at
+// floor((P-1)/SIZE)*SIZE+1, at local page (P-1)%SIZE+1. Fixed-size (not per-chapter) on purpose:
+// OCR chapter-header detection was unreliable, and fixed shards still land the reader on the exact
+// scan page. `sections` (optional) restricts self-hosting to specific section values — bg-bhashya
+// self-hosts ONLY bhashyarka/anubhuti (the two sections that have no advaitasharada home; its
+// mula/bhashya/anandagiri keep their existing advaitasharada links via the dispatch order below).
+const SELF_HOSTED_SIZE=40;
+const SELF_HOSTED={
+ 'panchadashi-ramkrishna':{dir:'texts/panchadashi',slug:'panchadashi',pageField:'page'},
+ 'bg-bhashya':{dir:'texts/bg-bhashya',slug:'bg-bhashya',pageField:'page',sections:new Set(['bhashyarka','anubhuti'])},
+};
+function selfHostedLink(b){
+ const cfg=SELF_HOSTED[b.t]; if(!cfg)return null;
+ if(cfg.sections&&!cfg.sections.has(b.c.section))return null;
+ const pg=b.c[cfg.pageField]; if(pg==null)return null;
+ const start=Math.floor((pg-1)/SELF_HOSTED_SIZE)*SELF_HOSTED_SIZE+1;
+ const local=((pg-1)%SELF_HOSTED_SIZE)+1;
+ return {url:`${cfg.dir}/${cfg.slug}-${String(start).padStart(4,'0')}.pdf#page=${local}`, label:`scan p.${pg}`};
+}
+// Dispatches to whichever source this block belongs to (Gita Supersite, then advaitasharada, then a
+// self-hosted scan) — renderHit doesn't need to know which. Self-hosted is LAST so any external home
+// wins; it fills the gap for texts/sections that have none.
 function sourceLink(b,matchedText){
  const gs=gitaSupersiteLink(b);
  if(gs)return{url:gs,label:`gitasupersite (select ${GITA_SUPERSITE_TEXTS.get(b.t)} tab)`};
  const as=advaitasharadaLink(b,matchedText);
- return as?{url:as,label:'advaitaśārada'}:null;
+ if(as)return{url:as,label:'advaitaśārada'};
+ const sh=selfHostedLink(b);
+ return sh?{url:sh.url,label:sh.label}:null;
 }
 function renderHit(b,possible,useEx){
  const rawSnip=SS.snippet(b,useEx);
@@ -353,4 +379,9 @@ function run(){
  res.innerHTML=html;}
 buildFilters();
 document.getElementById('status').textContent=`ready — ${B.length.toLocaleString()} blocks across ${Object.keys(IDX.texts).length} texts. Type to search.`;
+// Offline + instant repeat loads: the service worker reactively caches whatever's fetched (the
+// ~6.6 MB-gzipped index_data.js, the library, and any scan-PDF shards the visitor opens), so a
+// second visit is served from cache. Bump sw.js's CACHE_NAME on every deploy so clients pick up a
+// new index_data.js. Registered defensively — a failed registration never blocks search.
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
 </script></body></html>
