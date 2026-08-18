@@ -17,6 +17,17 @@
     Devanāgarī shaping natively (font stack prefers Sanskrit-grade faces, falls back per device). */
  #page{max-width:760px;margin:24px auto;padding:0 20px 60px;font-family:'Noto Serif Devanagari','Shobhika','Shree Devanagari 714','Kohinoor Devanagari',serif;
    font-size:22px;line-height:2.05;color:#1a1a1a}
+ /* Layout-reconstructed pages (build_layout_pages.py): each scan line is its own element positioned
+    by its geometry — centered lines, left-title+right-page-number entry rows with dotted leaders, and
+    indented lines (padding-left inline). Tighter line-height since each div IS one visual line. */
+ #page.layout{font-size:19px;line-height:1.75}
+ .lp-c{text-align:center;margin:.35em 0}
+ .lp-x{margin:0}
+ .lp-e{display:flex;align-items:baseline;gap:8px;margin:.1em 0}
+ .lp-e .lp-t{flex:0 1 auto;font-weight:600}
+ .lp-e .lp-l{flex:1 1 auto;border-bottom:1px dotted #b9b0a2;transform:translateY(-.28em);margin:0 4px}
+ .lp-e .lp-p{flex:0 0 auto;color:#555}
+ .layout .gap{margin-top:.9em}
  mark{background:#ffe08a;padding:0 1px;border-radius:2px}
  mark.hl{background:#ffcf4d;box-shadow:0 0 0 3px #ffe9b0}
  #status{color:#777;font-size:13px;padding:8px 20px;max-width:760px;margin:0 auto}
@@ -63,6 +74,11 @@ const TEXTS={
  'vedantasara':{title:'Vedāntasāra (Sadānanda) — Subodhinī & Vidvanmanorañjanī', data:'texts/vedantasara/pages.js',
    scanDir:'texts/vedantasara-scan', slug:'vedantasara', size:40},
 };
+// Texts whose pages.js holds RECONSTRUCTED LAYOUT HTML (build_layout_pages.py) rather than flat text.
+// For these the page string is injected as HTML; the rest (e.g. bg-bhashya, built from index blocks)
+// stays flat text with <br>.
+const LAYOUT=new Set(['panchadashi-ramkrishna','dakshinamurti-stotra','brihadaranyaka-vartika-sara',
+ 'siddhantabindu','naishkarmyasiddhi','vicharasagara','anubhutiprakasha','upadeshasahasri','vedantasara']);
 const P=new URLSearchParams(location.search);
 const id=P.get('text'), hl=P.get('hl')||'';
 let page=Math.max(1,parseInt(P.get('page')||'1',10));
@@ -70,23 +86,41 @@ const cfg=TEXTS[id];
 function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
 function reEsc(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
 function go(p){const u=new URL(location.href);u.searchParams.set('page',p);u.searchParams.delete('hl');location.href=u.toString();}
+// Highlight the matched sandhi surface across the rendered DOM's text nodes (whitespace-tolerant),
+// safe over reconstructed HTML — we never string-replace into the markup, only wrap matches inside
+// individual text nodes. Matches confined to one text node (one visual line); a match split across
+// lines simply isn't highlighted (rare, acceptable).
+function highlightIn(container){
+ if(!hl) return;
+ let re; try{re=new RegExp(reEsc(hl).replace(/\s+/g,'\\s+'),'g');}catch(e){return;}
+ const walker=document.createTreeWalker(container,NodeFilter.SHOW_TEXT,null);
+ const targets=[]; let n;
+ while((n=walker.nextNode())){re.lastIndex=0; if(n.nodeValue&&re.test(n.nodeValue))targets.push(n);}
+ for(const node of targets){
+   const text=node.nodeValue,frag=document.createDocumentFragment(); let last=0,mm; re.lastIndex=0;
+   while((mm=re.exec(text))){
+     if(mm.index>last)frag.appendChild(document.createTextNode(text.slice(last,mm.index)));
+     const mk=document.createElement('mark');mk.className='hl';mk.textContent=mm[0];frag.appendChild(mk);
+     last=mm.index+mm[0].length; if(mm.index===re.lastIndex)re.lastIndex++;
+   }
+   if(last<text.length)frag.appendChild(document.createTextNode(text.slice(last)));
+   node.parentNode.replaceChild(frag,node);
+ }
+}
 function render(){
  const pages=(window.TEXT_PAGES||{})[id]||{};
  const total=Object.keys(pages).length;
  document.getElementById('title').textContent=cfg.title;
  document.getElementById('pageIn').value=page; document.getElementById('pageIn').max=total;
- // secondary scan link for this exact page (same 40-page shard arithmetic as search.html)
  if(cfg.scanDir){const start=Math.floor((page-1)/cfg.size)*cfg.size+1,local=((page-1)%cfg.size)+1;
    const a=document.getElementById('scanLink');a.href=`${cfg.scanDir}/${cfg.slug}-${String(start).padStart(4,'0')}.pdf#page=${local}`;a.style.display='';}
- let raw=pages[String(page)];
- if(raw==null){document.getElementById('status').textContent=`page ${page} not found`;document.getElementById('page').textContent='';return;}
+ const raw=pages[String(page)]; const el=document.getElementById('page');
+ if(raw==null){document.getElementById('status').textContent=`page ${page} not found`;el.textContent='';return;}
  document.getElementById('status').textContent=`page ${page} of ${total}`+(hl?` · highlighting “${hl}”`:'');
- // highlight the matched surface: escape it, make each whitespace run match any whitespace (space,
- // newline, multiple), wrap matches in sentinels on the RAW text, then escape + <br> + <mark>.
- if(hl){try{const pat=new RegExp(reEsc(hl).replace(/\s+/g,'\\s+'),'g');raw=raw.replace(pat,m=>`\u0001${m}\u0002`);}catch(e){}}
- let h=esc(raw).replace(/\n/g,'<br>').replace(/\u0001/g,'<mark class="hl">').replace(/\u0002/g,'</mark>');
- document.getElementById('page').innerHTML=h;
- const m=document.querySelector('mark.hl'); if(m)m.scrollIntoView({block:'center'});
+ if(LAYOUT.has(id)){el.className='layout';el.innerHTML=raw;}          // reconstructed layout HTML
+ else{el.className='';el.innerHTML=esc(raw).replace(/\n/g,'<br>');}   // flat text (e.g. bg-bhashya)
+ highlightIn(el);
+ const m=el.querySelector('mark.hl'); if(m)m.scrollIntoView({block:'center'});
 }
 document.getElementById('prev').onclick=()=>{if(page>1)go(page-1);};
 document.getElementById('next').onclick=()=>go(page+1);
