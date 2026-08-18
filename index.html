@@ -196,7 +196,11 @@ const ADVAITASHARADA = {
    anchor:{prefix:'MD', sField:'khanda', leafField:'mantra', leafLetter:'V'}},
  'prashna-bhashya': {slug:'Prashna', path:'bhashyaVyakhya', pageField:'prashna',
    anchor:{prefix:'PR', leafField:'mantra', leafLetter:'V'}},
- 'sarvavedantasiddhantasarasangraha': {slug:'sarvavedantasiddhantasarasangraha', path:'prakarana'},
+ // Uses advaitasharada's newer /read/ route (not /display/) — the only one that highlights for this
+ // text. Verses are paginated 336/page as /read/<slug>/0-<page>/, the hit's surface goes in ?ul=, and
+ // the verse anchor is #SVS_<verse padded to 4> (confirmed live 2026-08-18: 0-1=vv.1-336,
+ // 0-2=337-672, 0-3=673-1006). See advaitasharadaReadLink().
+ 'sarvavedantasiddhantasarasangraha': {readRoute:true, slug:'sarvavedantasiddhantasarasangraha', versesPerPage:336, idPrefix:'SVS', idPad:4, verseField:'verse'},
  'shatashloki': {slug:'shatashloki', path:'prakarana'},
  'taittiriya-bhashya': {slug:'Taitiriya', path:'bhashyaVyakhya', pageField:'valli',
    anchor:{prefix:'T', sField:'anuvaka', leafField:'mantra', leafLetter:'V'}},
@@ -258,8 +262,20 @@ function buildAnchorId(cfg,secOverride,b){
 // any block, confirmed it isn't tied to the `bhashya` CSS class specifically, so it also applies
 // to Ānandagiri's `_I01` blocks, not just Śaṅkara's own `_B01`). Both require `id=` to already be
 // present — the site's own code never even looks at hl/hlBhashya without it.
+// advaitasharada's /read/ route: /read/<slug>/0-<page>/?ul=<surface>#<PREFIX>_<verse>. Unlike the
+// /display/ route (page=/vyakhya=/id=/hlBhashya=), this one highlights via ?ul= against the verse
+// anchored by the fragment. Used for texts where /display/ doesn't highlight (e.g. SVS).
+function advaitasharadaReadLink(cfg,b,matchedText){
+ const v=b.c[cfg.verseField]; if(v==null)return null;
+ const page=Math.floor((v-1)/cfg.versesPerPage)+1;
+ const id=`${cfg.idPrefix}_${String(v).padStart(cfg.idPad,'0')}`;
+ let url=`https://advaitasharada.sringeri.net/read/${cfg.slug}/0-${page}/`;
+ if(matchedText)url+=`?ul=${encodeURIComponent(matchedText)}`;
+ return url+`#${id}`;
+}
 function advaitasharadaLink(b,matchedText){
  const cfg=ADVAITASHARADA[b.t]; if(!cfg)return null;
+ if(cfg.readRoute)return advaitasharadaReadLink(cfg,b,matchedText);
  let vyakhya=cfg.vyakhya||null, secOverride=null;
  if(cfg.bySection){secOverride=cfg.bySection[b.c.section]; if(!secOverride)return null; vyakhya=secOverride.vyakhya||null;}
  // "intro" blocks (chapter-level maṅgala-śloka/etymological preambles, outside any verse) carry
