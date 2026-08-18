@@ -38,7 +38,8 @@
       <option value="mula">mūlam only</option>
       <option value="bhashya">bhāṣyam only</option>
       <option value="tika">ṭīkās</option>
-      <option value="prakarana">prakaraṇas</option></select></div>
+      <option value="prakarana">prakaraṇas</option>
+      <option value="vartika">vārtikas</option></select></div>
    <div class="f"><label>Match</label><select id="mode">
       <option value="sandhi" selected>sandhi-tolerant (high-recall)</option>
       <option value="cooccur">words in same sentence</option>
@@ -86,11 +87,16 @@ document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')r
 // own display/prakarana/ URL section). Vārtika texts (no section field at all, and a distinct genre
 // from ṭīkā) and BG's anubhuti/bhashyarka sections have no bucket — only visible under "all texts".
 const TIKA_PREFIX='anandagiri-';
-const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedantasiddhantasarasangraha','vivekacudamani','panchadashi-ramkrishna']);
+const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedantasiddhantasarasangraha','vivekacudamani','panchadashi-ramkrishna','dakshinamurti-stotra']);
+// Vārtika-genre works (verse expositions of a bhāṣya). Previously bucketless ("only under all
+// texts"); now a category of their own. brihad-/taittiriya-vartika are indexed from advaitasharada;
+// brihadaranyaka-vartika-sara (Vidyāraṇya) is self-hosted from OCR.
+const VARTIKA_TEXTS=new Set(['brihad-vartika','taittiriya-vartika','brihadaranyaka-vartika-sara']);
 function blockCategory(b){
  if(b.t.startsWith(TIKA_PREFIX))return 'tika';
  if(GITA_SUPERSITE_TEXTS.has(b.t))return 'tika';
  if(PRAKARANA_TEXTS.has(b.t))return 'prakarana';
+ if(VARTIKA_TEXTS.has(b.t))return 'vartika';
  if(b.t==='bg-bhashya'){
    if(b.c.section==='anandagiri')return 'tika';
    if(b.c.section==='mula')return 'mula';
@@ -321,6 +327,8 @@ const SELF_HOSTED_SIZE=40;
 // link. `dir` (PDF shards) is the fallback for texts with no HTML viewer yet (e.g. BG bhāṣyārka).
 const SELF_HOSTED={
  'panchadashi-ramkrishna':{viewer:true,slug:'panchadashi',pageField:'page',label:'read',scanDir:'texts/panchadashi-scan'},
+ 'dakshinamurti-stotra':{viewer:true,slug:'dakshinamurti',pageField:'page',label:'read',scanDir:'texts/dakshinamurti-scan'},
+ 'brihadaranyaka-vartika-sara':{viewer:true,slug:'bavs',pageField:'page',label:'read',scanDir:'texts/bavs-scan'},
  'bg-bhashya':{viewer:true,slug:'bg-bhashya',pageField:'page',sections:new Set(['bhashyarka','anubhuti']),label:'read',scanDir:'texts/bg-bhashya'},
 };
 function selfHostedShard(dir,slug,pg){
