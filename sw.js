@@ -1,14 +1,14 @@
-// NETWORK-FIRST service worker (Harsha, 2026-08-18: "always force full reload during churn — never
-// mind slowness FOR NOW"). Online always takes the freshest file; the cache is only an offline
-// fallback. Paired with index.html's controllerchange auto-reload + updateViaCache:'none' so a new
-// deploy is picked up automatically, no manual cache-clear. NOTE: revert to cache-first (fast repeat
-// loads) once the churn settles — network-first re-fetches index_data.js (~6.6 MB gzip) etc. every
-// online visit, which is heavy for public users. Bump CACHE_NAME on deploy.
-const CACHE_NAME = 'sanskrit-search-v19';
-const SHELL = ['./', './index.html'];   // minimal offline shell; everything else caches reactively
+// Cache-first + auto-reload — the DEFAULT good state for the search site (Harsha, 2026-08-18: it
+// needn't be network-first). Fast repeat loads (the big index_data.js/pages.js/scan-PDF shards are
+// served from cache), AND a new deploy still lands automatically: `activate` deletes the old
+// CACHE_NAME cache and index.html's controllerchange handler reloads the page once, so the reload
+// re-fetches everything fresh. So: always bump CACHE_NAME on every deploy (esp. after index_data.js
+// changes). Shell precached; big files cache reactively on first fetch (first visit isn't doubled).
+const CACHE_NAME = 'sanskrit-search-v20';
+const ASSETS = ['./', './index.html', './viewer.html', './lib/sanskrit-search.js', './fonts/NotoSerifDevanagari-Regular.woff2'];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL)).catch(() => {}));
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)).catch(() => {}));
   self.skipWaiting();
 });
 
@@ -22,10 +22,10 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    fetch(event.request).then(res => {
+    caches.match(event.request).then(cached => cached || fetch(event.request).then(res => {
       const copy = res.clone();
       caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy)).catch(() => {});
       return res;
-    }).catch(() => caches.match(event.request))   // offline only
+    }).catch(() => cached))
   );
 });
