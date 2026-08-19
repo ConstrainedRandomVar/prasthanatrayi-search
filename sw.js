@@ -4,7 +4,7 @@
 // CACHE_NAME cache and index.html's controllerchange handler reloads the page once, so the reload
 // re-fetches everything fresh. So: always bump CACHE_NAME on every deploy (esp. after index_data.js
 // changes). Shell precached; big files cache reactively on first fetch (first visit isn't doubled).
-const CACHE_NAME = 'sanskrit-search-v21';
+const CACHE_NAME = 'sanskrit-search-v22';
 const ASSETS = ['./', './index.html', './viewer.html', './lib/sanskrit-search.js', './fonts/NotoSerifDevanagari-Regular.woff2'];
 
 self.addEventListener('install', event => {
