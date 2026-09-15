@@ -53,6 +53,7 @@
 <div id="results"></div>
 
 <script src="index_data.js"></script>
+<script src="svadhyaya-refidx.js"></script>
 <script src="lib/sanskrit-search.js"></script>
 <script>
 // All normalization / sandhi / matching / highlighting lives in the library (lib/sanskrit-search.js).
@@ -104,7 +105,34 @@ const SVADHYAYA={'bg-bhashya':'gita','isha-bhashya':'isha','kena-pada-bhashya':'
  'taittiriya-bhashya':'taitiriya','aitareya-bhashya':'aitareya','chandogya-bhashya':'chandogya','brihad-bhashya':'brha',
  'brahmasutra-bhashya':'bs','vivekacudamani':'vc','panchadashi-ramkrishna':'pd','panchadashi-modak-tika':'pd',
  'vicharasagara':'vicharasagara-1','atmabodha':'ab','upadesha-saram':'ups'};
-function svadhyayaLink(b){const o=SVADHYAYA[b.t];return o?`${SVADHYAYA_BASE}reading-${o}.html`:null;}
+// Reconstruct a block's verse ref from its int fields (adhyaya.valli.mantra / chapter.verse / verse) —
+// this equals the reading view's id="v-<ref>" anchor. SVADHYAYA_REFIDX (built from the reading HTML) maps
+// that ref → the exact chapter file, so we deep-link to the verse (not the text's front page). A text-
+// fragment (:~:text=) also scrolls-to + highlights the matched span. Falls back to the entry page if the
+// ref can't be resolved (e.g. page-indexed panchadashi-ramkrishna, or an intro block with no mantra).
+function svRef(b){
+ const flds=((IDX.texts[b.t]||{}).fields)||[], parts=[];
+ for(const f of flds){if(f.type==='int'&&f.k!=='page'&&b.c[f.k]!=null)parts.push(b.c[f.k]);}
+ return parts.length?parts.join('.'):null;
+}
+// Resolve a ref to its reading-view file: exact anchor if present, else the file of the nearest
+// ref sharing the longest leading prefix (same chapter) — so a bhāṣya-span block still lands on the
+// right chapter page and the text-fragment finds the exact spot.
+function svFile(idx,ref){
+ if(idx[ref])return{file:idx[ref],exact:true};
+ for(const k in idx){if(k.startsWith(ref+'.'))return{file:idx[k],exact:false};}   // ref shorter than anchors (e.g. khaṇḍa only) → first verse under it
+ const p=ref.split('.');
+ for(let n=p.length-1;n>=1;n--){const pre=p.slice(0,n).join('.')+'.';for(const k in idx){if(k.startsWith(pre))return{file:idx[k],exact:false};}}  // ref longer/diverging → nearest same-chapter
+ return null;
+}
+function svadhyayaLink(b,matchedText){
+ const o=SVADHYAYA[b.t]; if(!o)return null;
+ const ref=svRef(b); if(ref==null)return null;            // page-indexed (bg-bhashya/VS/pd-ramkrishna) → can't pinpoint a verse; no front-page link
+ const hit=svFile((window.SVADHYAYA_REFIDX||{})[o]||{},ref); if(!hit)return null;
+ let url=`${SVADHYAYA_BASE}${hit.file}`+(hit.exact?`#v-${encodeURIComponent(ref)}`:'');
+ if(matchedText){url+=(url.includes('#')?'':'#')+`:~:text=${encodeURIComponent(matchedText.trim())}`;}
+ return url;
+}
 function blockCategory(b){
  if(b.t==='panchadashi-modak-tika')return 'tika';
  if(b.t.startsWith(TIKA_PREFIX))return 'tika';
@@ -416,7 +444,7 @@ function renderHit(b,possible,useEx){
  const cp=`<span class="copy" onclick="navigator.clipboard.writeText(this.dataset.c);this.textContent='copied ✓'" data-c="${esc(b.s)}">copy text</span>`;
  const src=sourceLink(b,matchedText);
  const asA=src?`<a class="advaita" href="${esc(src.url)}" target="_blank" rel="noopener">${src.label} ↗</a>`:'';
- const svU=svadhyayaLink(b);
+ const svU=svadhyayaLink(b,matchedText);
  const svA=svU?`<a class="advaita svadhyaya" href="${esc(svU)}" target="_blank" rel="noopener">svādhyāya ↗</a>`:'';
  // Secondary original-scan link, shown only when the primary is a readable typeset re-render (so the
  // reader can verify the OCR against the actual page image).
