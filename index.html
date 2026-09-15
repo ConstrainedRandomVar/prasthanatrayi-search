@@ -127,10 +127,13 @@ function svFile(idx,ref){
 }
 function svadhyayaLink(b,matchedText){
  const o=SVADHYAYA[b.t]; if(!o)return null;
- const ref=svRef(b); if(ref==null)return null;            // page-indexed (bg-bhashya/VS/pd-ramkrishna) → can't pinpoint a verse; no front-page link
+ const ref=svRef(b); if(ref==null)return null;            // page-indexed → can't pinpoint a verse; no front-page link
  const hit=svFile((window.SVADHYAYA_REFIDX||{})[o]||{},ref); if(!hit)return null;
- let url=`${SVADHYAYA_BASE}${hit.file}`+(hit.exact?`#v-${encodeURIComponent(ref)}`:'');
- if(matchedText){url+=(url.includes('#')?'':'#')+`:~:text=${encodeURIComponent(matchedText.trim())}`;}
+ // ?hl=<term> → the reading view's own highlighter (sync.js) reveals the सन्धि layer + highlights the match
+ // (robust to सन्धि/पद layer + saved mode, unlike a browser :~:text= fragment); #v-<ref> scrolls to the verse.
+ let url=`${SVADHYAYA_BASE}${hit.file}`;
+ if(matchedText)url+=`?hl=${encodeURIComponent(matchedText.trim())}`;
+ if(hit.exact)url+=`#v-${encodeURIComponent(ref)}`;
  return url;
 }
 function blockCategory(b){
