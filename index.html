@@ -87,12 +87,26 @@ document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')r
 // own display/prakarana/ URL section). Vārtika texts (no section field at all, and a distinct genre
 // from ṭīkā) and BG's anubhuti/bhashyarka sections have no bucket — only visible under "all texts".
 const TIKA_PREFIX='anandagiri-';
-const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedantasiddhantasarasangraha','vivekacudamani','panchadashi-ramkrishna','dakshinamurti-stotra','siddhantabindu','naishkarmyasiddhi','vicharasagara','anubhutiprakasha','upadeshasahasri','vedantasara','advaita-makaranda']);
+const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedantasiddhantasarasangraha','vivekacudamani','panchadashi-ramkrishna','dakshinamurti-stotra','siddhantabindu','naishkarmyasiddhi','vicharasagara','anubhutiprakasha','upadeshasahasri','vedantasara','advaita-makaranda','atmabodha','upadesha-saram']);
 // Vārtika-genre works (verse expositions of a bhāṣya). Previously bucketless ("only under all
 // texts"); now a category of their own. brihad-/taittiriya-vartika are indexed from advaitasharada;
 // brihadaranyaka-vartika-sara (Vidyāraṇya) is self-hosted from OCR.
 const VARTIKA_TEXTS=new Set(['brihad-vartika','taittiriya-vartika','brihadaranyaka-vartika-sara']);
+// svādhyāya cross-link: search text-id → the academy reading-view page ("<out>.html"). A result for one of
+// these gets a "svādhyāya ↗" link back to its reading view (next to the advaitaśārada link). Base is the
+// LIVE academy site (a separate origin from this search tool — reading views are served at its root).
+// ⚠ CONFIRM this base URL (no CNAME on the academy repo → GitHub Pages default). Any NEW svādhyāya text
+// must be added here + indexed (see CLAUDE.md #7e). atmabodha/upadesha-saram/panchadashi-modak-tika have no
+// advaitaśārada page or scan, so this is their ONLY source link.
+const SVADHYAYA_BASE='https://constrainedrandomvar.github.io/vedantic-vyakarana-academy/';
+const SVADHYAYA={'bg-bhashya':'gita','isha-bhashya':'isha','kena-pada-bhashya':'kena','kena-vakya-bhashya':'kena',
+ 'katha-bhashya':'kathaka','prashna-bhashya':'prashna','mundaka-bhashya':'mundaka','mandukya-bhashya':'mandukya',
+ 'taittiriya-bhashya':'taitiriya','aitareya-bhashya':'aitareya','chandogya-bhashya':'chandogya','brihad-bhashya':'brha',
+ 'brahmasutra-bhashya':'bs','vivekacudamani':'vc','panchadashi-ramkrishna':'pd','panchadashi-modak-tika':'pd',
+ 'vicharasagara':'vicharasagara-1','atmabodha':'ab','upadesha-saram':'ups'};
+function svadhyayaLink(b){const o=SVADHYAYA[b.t];return o?`${SVADHYAYA_BASE}reading-${o}.html`:null;}
 function blockCategory(b){
+ if(b.t==='panchadashi-modak-tika')return 'tika';
  if(b.t.startsWith(TIKA_PREFIX))return 'tika';
  if(GITA_SUPERSITE_TEXTS.has(b.t))return 'tika';
  if(PRAKARANA_TEXTS.has(b.t))return 'prakarana';
@@ -402,13 +416,15 @@ function renderHit(b,possible,useEx){
  const cp=`<span class="copy" onclick="navigator.clipboard.writeText(this.dataset.c);this.textContent='copied ✓'" data-c="${esc(b.s)}">copy text</span>`;
  const src=sourceLink(b,matchedText);
  const asA=src?`<a class="advaita" href="${esc(src.url)}" target="_blank" rel="noopener">${src.label} ↗</a>`:'';
+ const svU=svadhyayaLink(b);
+ const svA=svU?`<a class="advaita svadhyaya" href="${esc(svU)}" target="_blank" rel="noopener">svādhyāya ↗</a>`:'';
  // Secondary original-scan link, shown only when the primary is a readable typeset re-render (so the
  // reader can verify the OCR against the actual page image).
  const scan=selfHostedScanLink(b);
  const scanA=(scan&&(!src||src.url!==scan.url))?`<a class="advaita" href="${esc(scan.url)}" target="_blank" rel="noopener">${scan.label} ↗</a>`:'';
  const badge=possible?'<span class="possible-badge">possible</span>':'';
  // scan (verify) link first, primary read/source link rightmost (Harsha, 2026-08-18).
- return `<div class="hit${possible?' possible':''}"><div class="meta">${locStr(b)} ${badge} ${cp} ${scanA} ${asA}</div><div class="snip">${snip}</div></div>`;
+ return `<div class="hit${possible?' possible':''}"><div class="meta">${locStr(b)} ${badge} ${cp} ${scanA} ${asA} ${svA}</div><div class="snip">${snip}</div></div>`;
 }
 function run(){
  const raw=document.getElementById('q').value.trim(),res=document.getElementById('results');res.innerHTML='';
