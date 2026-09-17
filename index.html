@@ -88,7 +88,7 @@ document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')r
 // own display/prakarana/ URL section). Vārtika texts (no section field at all, and a distinct genre
 // from ṭīkā) and BG's anubhuti/bhashyarka sections have no bucket — only visible under "all texts".
 const TIKA_PREFIX='anandagiri-';
-const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedantasiddhantasarasangraha','vivekacudamani','panchadashi-ramkrishna','dakshinamurti-stotra','siddhantabindu','naishkarmyasiddhi','vicharasagara','anubhutiprakasha','upadeshasahasri','vedantasara','advaita-makaranda','atmabodha','upadesha-saram','saddarshanam']);
+const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedantasiddhantasarasangraha','vivekacudamani','panchadashi-ramkrishna','dakshinamurti-stotra','siddhantabindu','naishkarmyasiddhi','vicharasagara','anubhutiprakasha','upadeshasahasri','vedantasara','advaita-makaranda','atmabodha','upadesha-saram','saddarshanam','saddarshanam-tika']);
 // Vārtika-genre works (verse expositions of a bhāṣya). Previously bucketless ("only under all
 // texts"); now a category of their own. brihad-/taittiriya-vartika are indexed from advaitasharada;
 // brihadaranyaka-vartika-sara (Vidyāraṇya) is self-hosted from OCR.
@@ -104,7 +104,7 @@ const SVADHYAYA={'bg-bhashya':'gita','isha-bhashya':'isha','kena-pada-bhashya':'
  'katha-bhashya':'kathaka','prashna-bhashya':'prashna','mundaka-bhashya':'mundaka','mandukya-bhashya':'mandukya',
  'taittiriya-bhashya':'taitiriya','aitareya-bhashya':'aitareya','chandogya-bhashya':'chandogya','brihad-bhashya':'brha',
  'brahmasutra-bhashya':'bs','vivekacudamani':'vc','panchadashi-ramkrishna':'pd','panchadashi-modak-tika':'pd',
- 'vicharasagara':'vicharasagara','atmabodha':'ab','upadesha-saram':'ups','saddarshanam':'sad'};
+ 'vicharasagara':'vicharasagara','atmabodha':'ab','upadesha-saram':'ups','saddarshanam':'sad','saddarshanam-tika':'sad'};
 // Reconstruct a block's verse ref from its int fields (adhyaya.valli.mantra / chapter.verse / verse) —
 // this equals the reading view's id="v-<ref>" anchor. SVADHYAYA_REFIDX (built from the reading HTML) maps
 // that ref → the exact chapter file, so we deep-link to the verse (not the text's front page). A text-
