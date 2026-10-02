@@ -39,7 +39,8 @@
       <option value="bhashya">bhāṣyam only</option>
       <option value="tika">ṭīkās</option>
       <option value="prakarana">prakaraṇas</option>
-      <option value="vartika">vārtikas</option></select></div>
+      <option value="vartika">vārtikas</option>
+      <option value="nibandha">monographs</option></select></div>
    <div class="f"><label>Match</label><select id="mode">
       <option value="sandhi" selected>sandhi-tolerant (high-recall)</option>
       <option value="cooccur">words in same sentence</option>
@@ -93,6 +94,8 @@ const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedan
 // texts"); now a category of their own. brihad-/taittiriya-vartika are indexed from advaitasharada;
 // brihadaranyaka-vartika-sara (Vidyāraṇya) is self-hosted from OCR.
 const VARTIKA_TEXTS=new Set(['brihad-vartika','taittiriya-vartika','brihadaranyaka-vartika-sara']);
+// Monographs (निबन्धाः, the svādhyāya group of the same name): modern studies whose Sanskrit quotations are indexed.
+const NIBANDHA_TEXTS=new Set(['vrk-gita-upanishads']);
 // svādhyāya cross-link: search text-id → the academy reading-view page ("<out>.html"). A result for one of
 // these gets a "svādhyāya ↗" link back to its reading view (next to the advaitaśārada link). Base is the
 // LIVE academy site (a separate origin from this search tool — reading views are served at its root).
@@ -104,7 +107,8 @@ const SVADHYAYA={'bg-bhashya':'gita','isha-bhashya':'isha','kena-pada-bhashya':'
  'katha-bhashya':'kathaka','prashna-bhashya':'prashna','mundaka-bhashya':'mundaka','mandukya-bhashya':'mandukya',
  'taittiriya-bhashya':'taitiriya','aitareya-bhashya':'aitareya','chandogya-bhashya':'chandogya','brihad-bhashya':'brha',
  'brahmasutra-bhashya':'bs','vivekacudamani':'vc','panchadashi-ramkrishna':'pd','panchadashi-modak-tika':'pd',
- 'vicharasagara':'vicharasagara','atmabodha':'ab','upadesha-saram':'ups','saddarshanam':'sad'};
+ 'vicharasagara':'vicharasagara','atmabodha':'ab','upadesha-saram':'ups','saddarshanam':'sad',
+ 'vrk-gita-upanishads':'vrk-gita-upanishads'};
 // Reconstruct a block's verse ref from its int fields (adhyaya.valli.mantra / chapter.verse / verse) —
 // this equals the reading view's id="v-<ref>" anchor. SVADHYAYA_REFIDX (built from the reading HTML) maps
 // that ref → the exact chapter file, so we deep-link to the verse (not the text's front page). A text-
@@ -142,6 +146,7 @@ function blockCategory(b){
  if(GITA_SUPERSITE_TEXTS.has(b.t))return 'tika';
  if(PRAKARANA_TEXTS.has(b.t))return 'prakarana';
  if(VARTIKA_TEXTS.has(b.t))return 'vartika';
+ if(NIBANDHA_TEXTS.has(b.t))return 'nibandha';
  if(b.t==='bg-bhashya'){
    if(b.c.section==='anandagiri')return 'tika';
    if(b.c.section==='mula')return 'mula';
