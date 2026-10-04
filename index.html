@@ -71,7 +71,7 @@ function buildFilters(){const t=curText(),cont=document.getElementById('filters'
    if(f.type==='enum')ctrl=`<select data-k="${f.k}"><option value="">any</option>`+
      Object.entries(f.values).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')+`</select>`;
    else ctrl=`<input data-k="${f.k}" type="${f.type==='str'?'text':'number'}" placeholder="any" style="width:95px">`;
-   cont.innerHTML+=`<div class="f"><label>${f.label}</label>${ctrl}</div>`;}
+   cont.innerHTML+=`<div class="f"><label>${fieldLabel(f)}</label>${ctrl}</div>`;}
  cont.querySelectorAll('[data-k]').forEach(el=>el.addEventListener('change',run));}
 textSel.onchange=()=>{buildFilters();run();};
 document.getElementById('category').onchange=run;
@@ -158,9 +158,27 @@ function blockCategory(b){
  if(sec==='bhashya'||sec==='intro')return 'bhashya';
  return null;
 }
+// A block may sit in more than one category (2026-10-04, Harsha): a prakaraṇa's (or its separately-indexed
+// ṭīkā's) blocks are 'prakarana' AND, by layer, 'mula' / 'bhashya' / 'tika' — the layer's own label decides
+// bhāṣya vs ṭīkā (AB Padmapāda = Ṭīkā; US Gaṇapati Muni / SD Kapālī Śāstrī = Bhāṣya; VC vyākhyā → ṭīkā), so
+// "bhāṣyam only" / "ṭīkās" / "mūlam only" also find the prakaraṇa layers, not just the upaniṣad/Gītā ones.
+function blockCats(b){
+ const out=new Set(); const c=blockCategory(b); if(c)out.add(c);
+ if(PRAKARANA_TEXTS.has(b.t)||b.t==='panchadashi-modak-tika'){
+   out.add('prakarana'); const sec=b.c.section;
+   if(sec==='mula')out.add('mula');
+   else if(sec==='vyakhya'||sec==='tika')out.add('tika');
+   else if(sec==='bhasya'){const f=((IDX.texts[b.t]||{}).fields||[]).find(x=>x.k==='section');
+     out.add(/ṭīkā/i.test(String(f&&f.values&&f.values[sec]||''))?'tika':'bhashya');}
+ }
+ return out;
+}
+// The per-text 'section' field is shown as "Layer" (mūla / bhāṣya / ṭīkā / vyākhyā) — the second-level filter
+// under a chosen text (e.g. Vivekacūḍāmaṇi → Mūla / Vyākhyā).
+function fieldLabel(f){return f.k==='section'?'Layer':f.label;}
 function passFilters(b){if(textSel.value&&b.t!==textSel.value)return false;
  const catSel=document.getElementById('category').value;
- if(catSel&&blockCategory(b)!==catSel)return false;
+ if(catSel&&!blockCats(b).has(catSel))return false;
  const t=IDX.texts[b.t];if(!t)return true;
  for(const el of document.querySelectorAll('#filters [data-k]')){const val=el.value.trim();if(!val)continue;
    const k=el.dataset.k,f=t.fields.find(x=>x.k===k),cv=b.c[k];
@@ -169,10 +187,10 @@ function passFilters(b){if(textSel.value&&b.t!==textSel.value)return false;
    else if(f.type==='int'){if(cv!=+val)return false;}
    else{if(String(cv)!==val)return false;}} return true;}
 function locStr(b){const t=IDX.texts[b.t],parts=[];
- if(!textSel.value)parts.push('<b>'+t.title.split('(')[0].trim()+'</b>');
+ if(!textSel.value)parts.push('<b>'+t.title.replace(/\s*\([^()]*\)\s*$/,'').trim()+'</b>');   // drop only a TRAILING (author): keeps "· commentary" in the name
  for(const f of t.fields){let cv=b.c[f.k];if(cv==null||cv==='')continue;
    if(f.type==='vrange')cv=Array.isArray(cv)?(cv[0]===cv[1]?cv[0]:cv[0]+'-'+cv[1]):cv;
-   if(f.type==='enum')cv=(f.values[cv]||cv);parts.push(`${f.label} <b>${cv}</b>`);}
+   if(f.type==='enum')cv=(f.values[cv]||cv);parts.push(`${fieldLabel(f)} <b>${cv}</b>`);}
  return parts.join(' · ');}
 function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
 // Deep-link to the source text on advaitasharada.sringeri.net, per text. `pageField` names the
