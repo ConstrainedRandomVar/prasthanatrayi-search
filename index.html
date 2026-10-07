@@ -111,10 +111,10 @@ const SVADHYAYA={'bg-bhashya':'gita','isha-bhashya':'isha','kena-pada-bhashya':'
  'taittiriya-bhashya':'taitiriya','aitareya-bhashya':'aitareya','chandogya-bhashya':'chandogya','brihad-bhashya':'brha',
  'brahmasutra-bhashya':'bs','vivekacudamani':'vc','panchadashi-ramkrishna':'pd','panchadashi-modak-tika':'pd',
  'vicharasagara':'vicharasagara','atmabodha':'ab','upadesha-saram':'ups','saddarshanam':'sad',
- 'vrk-gita-upanishads':'vrk-gita-upanishads','vaiyasika-nyayamala':'bs','brihad-vartika-tika':'brha'};
+ 'vrk-gita-upanishads':'vrk-gita-upanishads','vaiyasika-nyayamala':'bs','brihad-vartika-tika':'brha','brihadaranyaka-vartika-sara':'brha'};
 // commentary-lane texts: the reading view shows them only when that commentary is chosen → the link carries
 // ?side=<lane> (+ &vk=<fold-out id> for a vārttika-ṭīkā note) so sync.js's highlighter opens the lane first.
-const SV_SIDE={'vaiyasika-nyayamala':'vnm','brihad-vartika-tika':'vartika'};
+const SV_SIDE={'vaiyasika-nyayamala':'vnm','brihad-vartika-tika':'vartika','brihadaranyaka-vartika-sara':'vsara'};
 // Reconstruct a block's verse ref from its int fields (adhyaya.valli.mantra / chapter.verse / verse) —
 // this equals the reading view's id="v-<ref>" anchor. SVADHYAYA_REFIDX (built from the reading HTML) maps
 // that ref → the exact chapter file, so we deep-link to the verse (not the text's front page). A text-
