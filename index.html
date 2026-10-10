@@ -115,6 +115,9 @@ const SVADHYAYA={'bg-bhashya':'gita','isha-bhashya':'isha','kena-pada-bhashya':'
 // commentary-lane texts: the reading view shows them only when that commentary is chosen → the link carries
 // ?side=<lane> (+ &vk=<fold-out id> for a vārttika-ṭīkā note) so sync.js's highlighter opens the lane first.
 const SV_SIDE={'vaiyasika-nyayamala':'vnm','brihad-vartika-tika':'vartika','brihadaranyaka-vartika-sara':'vsara'};
+// sections a reading view actually carries — a hit in any other section of the same index (the Gītā view has no
+// Bhāṣyārka-prakāśa / Anubhūtisvarūpa) gets NO svādhyāya link: it would land on a page without the matched text.
+const SV_SECTIONS={'bg-bhashya':new Set(['mula','bhashya','anandagiri'])};
 // Reconstruct a block's verse ref from its int fields (adhyaya.valli.mantra / chapter.verse / verse) —
 // this equals the reading view's id="v-<ref>" anchor. SVADHYAYA_REFIDX (built from the reading HTML) maps
 // that ref → the exact chapter file, so we deep-link to the verse (not the text's front page). A text-
@@ -122,7 +125,10 @@ const SV_SIDE={'vaiyasika-nyayamala':'vnm','brihad-vartika-tika':'vartika','brih
 // ref can't be resolved (e.g. page-indexed panchadashi-ramkrishna, or an intro block with no mantra).
 function svRef(b){
  const flds=((IDX.texts[b.t]||{}).fields)||[], parts=[];
- for(const f of flds){if(f.type==='int'&&f.k!=='page'&&b.c[f.k]!=null)parts.push(b.c[f.k]);}
+ for(const f of flds){
+  if(f.type==='int'&&f.k!=='page'&&b.c[f.k]!=null)parts.push(b.c[f.k]);
+  else if(f.type==='vrange'&&Array.isArray(b.c[f.k])&&b.c[f.k][0]!=null)parts.push(b.c[f.k][0]);   // [45,47] → its first verse (was dropped → chapter page, no #v- anchor)
+ }
  return parts.length?parts.join('.'):null;
 }
 // Resolve a ref to its reading-view file: exact anchor if present, else the file of the nearest
@@ -137,6 +143,7 @@ function svFile(idx,ref){
 }
 function svadhyayaLink(b,matchedText){
  const o=SVADHYAYA[b.t]; if(!o)return null;
+ if(SV_SECTIONS[b.t]&&!SV_SECTIONS[b.t].has(b.c.section))return null;
  const ref=svRef(b); if(ref==null)return null;            // page-indexed → can't pinpoint a verse; no front-page link
  const hit=svFile((window.SVADHYAYA_REFIDX||{})[o]||{},ref); if(!hit)return null;
  // ?hl=<term> → the reading view's own highlighter (sync.js) reveals the सन्धि layer + highlights the match
