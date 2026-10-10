@@ -6,7 +6,7 @@
 //    font) + scan-PDF shards, cache-first; `activate` deletes the old one and index.html's controllerchange
 //    handler reloads the page once, so a deploy still lands automatically.
 // sync_search.js rewrites CACHE_NAME and HASHED_KEEP — keep both on one line each.
-const CACHE_NAME = 'sanskrit-search-v53';
+const CACHE_NAME = 'sanskrit-search-v54';
 const DATA_CACHE = 'sanskrit-search-data';
 const HASHED_KEEP = ["index_data.4836315057.js","svadhyaya-refidx.3d5874e435.js"];
 const ASSETS = ['./', './index.html', './viewer.html', './lib/sanskrit-search.js', './fonts/NotoSerifDevanagari-Regular.woff2'];

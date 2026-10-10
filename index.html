@@ -26,12 +26,40 @@
  .possible-badge{font-size:11px;color:#b45309;border:1px solid #f0d999;border-radius:4px;padding:0 6px;background:#fff6e0}
  .toggle{display:flex;align-items:center;gap:5px;font-size:14px;color:#333;padding-bottom:7px}
  .section-div{margin:18px 18px 6px;padding-top:10px;border-top:1px dashed #e0d3a8;font-size:13px;color:#b45309;font-weight:600}
+ header{display:flex;align-items:center;gap:12px}
+ header h1{flex:1}
+ .lib{color:#fde68a;text-decoration:none;font-size:14px;border:1px solid rgba(253,230,138,.45);border-radius:6px;padding:3px 10px;white-space:nowrap}
+ .lib:hover{background:rgba(253,230,138,.12)}
+ /* search history dropdown (#4) — personal, stored only in this browser (vv-store.js) */
+ #qwrap{position:relative;flex:1;min-width:240px;display:flex}
+ #qwrap #q{flex:1;min-width:0}
+ #hist{position:absolute;left:0;right:0;top:100%;margin-top:3px;background:#fff;border:1px solid #bbb;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.12);z-index:20;max-height:60vh;overflow:auto;display:none}
+ #hist.open{display:block}
+ #hist .hh{font-size:11px;color:#888;padding:6px 10px 2px;text-transform:uppercase;letter-spacing:.04em}
+ #hist .hi{display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;border-top:1px solid #f1ede6}
+ #hist .hi.act,#hist .hi:hover{background:#fff6e0}
+ #hist .hq{font-size:16px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ #hist .hf{font-size:11px;color:#7a6a55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45%}
+ #hist .hb{border:0;background:none;cursor:pointer;color:#7a6a55;font-size:14px;padding:2px 5px;border-radius:4px}
+ #hist .hb:hover{background:#f0e6d0;color:#3a2f2a}
+ #hist .hclear{display:block;text-align:right;padding:6px 10px;font-size:12px;color:#b45309;cursor:pointer;border-top:1px solid #f1ede6}
+ /* ☆ bookmark on a hit (#7) + its "add to collection" popover */
+ .star{border:1px solid #e3e0da;background:#fff;border-radius:4px;cursor:pointer;font-size:14px;line-height:1;padding:2px 6px;color:#b45309}
+ .star.on{background:#fff6e0;border-color:#f0d999}
+ .colpop{position:absolute;z-index:30;background:#fff;border:1px solid #bbb;border-radius:8px;box-shadow:0 8px 22px rgba(0,0,0,.15);padding:10px 12px;min-width:240px;max-width:320px;font-size:13px}
+ .colpop h4{margin:0 0 6px;font-size:13px;color:#3a2f2a}
+ .colpop label{display:flex;gap:6px;align-items:center;font-size:13px;color:#333;margin:3px 0;cursor:pointer}
+ .colpop .cnew{display:flex;gap:6px;margin-top:6px}
+ .colpop .cnew input{flex:1;font-size:13px;padding:4px 6px}
+ .colpop .cnew button,.colpop .cfoot button{font-size:12px;padding:3px 8px;border:1px solid #bbb;border-radius:4px;background:#faf9f7;cursor:pointer}
+ .colpop .cfoot{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+ .colpop .crm{color:#b91c1c;cursor:pointer;font-size:12px}
 </style></head><body>
-<header><h1>Sanskrit Search <small>— ITRANS or Devanāgarī; orthography-, space- & sandhi-tolerant</small></h1></header>
+<header><h1>Sanskrit Search <small>— ITRANS or Devanāgarī; orthography-, space- & sandhi-tolerant</small></h1><a class="lib" id="libLink" href="https://constrainedrandomvar.github.io/vedantic-vyakarana-academy/library.html" target="_blank" rel="noopener" title="your bookmarks, collections and notes (kept in this browser only)">★ My library</a></header>
 <div class="bar">
  <div class="row">
-   <input id="q" placeholder="search…  e.g.  devaH  or  देवः  or  saMskriya" autofocus>
-   <button onclick="run()" style="font-size:16px;padding:9px 16px">Search</button>
+   <div id="qwrap"><input id="q" placeholder="search…  e.g.  devaH  or  देवः  or  saMskriya" autofocus autocomplete="off"><div id="hist" role="listbox"></div></div>
+   <button onclick="run(true)" style="font-size:16px;padding:9px 16px">Search</button>
    <div class="f"><label>Text</label><select id="text"></select></div>
    <div class="f"><label>Category</label><select id="category">
       <option value="">all texts</option>
@@ -56,6 +84,7 @@
 <script src="index_data.4836315057.js"></script>
 <script src="svadhyaya-refidx.3d5874e435.js"></script>
 <script src="lib/sanskrit-search.js"></script>
+<script src="vv-store.js"></script>
 <script>
 // All normalization / sandhi / matching / highlighting lives in the library (lib/sanskrit-search.js).
 // This page owns only the UI: index load, per-text filters, and rendering.
@@ -78,7 +107,7 @@ document.getElementById('category').onchange=run;
 document.getElementById('mode').onchange=run;
 document.getElementById('showPossible').onchange=run;
 document.getElementById('q').addEventListener('input',e=>{document.getElementById('prev').textContent=SS.toDeva(e.target.value);});
-document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')run();});
+document.getElementById('q').addEventListener('keydown',onQKey);
 // Corpus-wide category filter, orthogonal to the per-text "Text" dropdown (which exposes each
 // text's OWN section field, e.g. mula/bhashya/intro, only once that one text is selected). "tika"
 // groups the 12 anandagiri-* texts, bg-bhashya's own (older, PDF-sourced) anandagiri section (same
@@ -155,6 +184,9 @@ function svFile(idx,ref){
  for(let n=p.length-1;n>=1;n--){const pre=p.slice(0,n).join('.')+'.';for(const k in idx){if(k.startsWith(pre))return{file:idx[k],exact:false};}}  // ref longer/diverging → nearest same-chapter
  return null;
 }
+// The reader's last-used reading site (vv-store.js lastSite): a visitor of the PUBLIC स्वाध्याय-दीपिका is linked back to
+// it, not to the academy; everyone else keeps the academy base.
+function svBase(){const ls=window.VVStore&&VVStore.lastSite();return(ls&&ls.site==='public'&&ls.base)?ls.base:SVADHYAYA_BASE;}
 function svadhyayaLink(b,matchedText){
  const o=SVADHYAYA[b.t]; if(!o)return null;
  if(SV_SECTIONS[b.t]&&!SV_SECTIONS[b.t].has(b.c.section))return null;
@@ -162,7 +194,7 @@ function svadhyayaLink(b,matchedText){
  const hit=svFile((window.SVADHYAYA_REFIDX||{})[o]||{},ref); if(!hit)return null;
  // ?hl=<term> → the reading view's own highlighter (sync.js) reveals the सन्धि layer + highlights the match
  // (robust to सन्धि/पद layer + saved mode, unlike a browser :~:text= fragment); #v-<ref> scrolls to the verse.
- let url=`${SVADHYAYA_BASE}${hit.file}`;
+ let url=`${svBase()}${hit.file}`;
  if(matchedText)url+=`?hl=${encodeURIComponent(matchedText.trim())}`;
  const side=SV_SIDE[b.t]||(SV_SECTION_SIDE[b.t]||{})[b.c.section];
  if(matchedText&&side)url+=`&side=${side}`+(b.c.tk?`&vk=${encodeURIComponent(b.c.tk)}`:'');
@@ -491,6 +523,7 @@ function sourceLink(b,matchedText){
  const sh=selfHostedLink(b,matchedText);
  return sh?{url:sh.url,label:sh.label}:null;
 }
+const HITS=[];   // render-order → bookmark record for that hit's ☆
 function renderHit(b,possible,useEx){
  const rawSnip=SS.snippet(b,useEx);
  const snip=esc(rawSnip).replaceAll(SS.M1,'<mark>').replaceAll(SS.M2,'</mark>');
@@ -500,17 +533,26 @@ function renderHit(b,possible,useEx){
  const src=sourceLink(b,matchedText);
  const asA=src?`<a class="advaita" href="${esc(src.url)}" target="_blank" rel="noopener">${src.label} ↗</a>`:'';
  const svU=svadhyayaLink(b,matchedText);
- const svA=svU?`<a class="advaita svadhyaya" href="${esc(svU)}" target="_blank" rel="noopener">svādhyāya ↗</a>`:'';
+ const svA=svU?`<a class="advaita svadhyaya" href="${esc(svU)}" target="_blank" rel="noopener" title="open this passage in the ग्रन्थाः reading view">ग्रन्थाः ↗</a>`:'';
  // Secondary original-scan link, shown only when the primary is a readable typeset re-render (so the
  // reader can verify the OCR against the actual page image).
  const scan=selfHostedScanLink(b);
  const scanA=(scan&&(!src||src.url!==scan.url))?`<a class="advaita" href="${esc(scan.url)}" target="_blank" rel="noopener">${scan.label} ↗</a>`:'';
  const badge=possible?'<span class="possible-badge">possible</span>':'';
  // scan (verify) link first, primary read/source link rightmost (Harsha, 2026-08-18).
- return `<div class="hit${possible?' possible':''}"><div class="meta">${locStr(b)} ${badge} ${cp} ${scanA} ${asA} ${svA}</div><div class="snip">${snip}</div></div>`;
+ let star='';
+ if(window.VVStore){
+  const ref=svRef(b), title=((IDX.texts[b.t]||{}).title||b.t)+(ref!=null?' '+ref:''), plain=rawSnip.split(SS.M1).join('').split(SS.M2).join('').trim();
+  const rec={url:svU||(src&&src.url)||searchUrl(),title,ref:ref!=null?String(ref):'',excerpt:plain.length>300?plain.slice(0,300)+'…':plain,src:'search',query:document.getElementById('q').value.trim()};
+  const i=HITS.push(rec)-1, on=!!VVStore.bookmarks.find(rec.url,rec.excerpt);
+  star=`<button class="star${on?' on':''}" data-i="${i}" title="${on?'bookmarked — click to file in a collection or remove':'bookmark this passage (★ My library)'}">${on?'★':'☆'}</button>`;
+ }
+ return `<div class="hit${possible?' possible':''}"><div class="meta">${star} ${locStr(b)} ${badge} ${cp} ${scanA} ${asA} ${svA}</div><div class="snip">${snip}</div></div>`;
 }
-function run(){
- const raw=document.getElementById('q').value.trim(),res=document.getElementById('results');res.innerHTML='';
+function run(explicit){
+ const raw=document.getElementById('q').value.trim(),res=document.getElementById('results');res.innerHTML='';HITS.length=0;closeHist();closePop();
+ saveUrlState(raw);
+ if(raw)queueHistory(explicit===true);
  if(!raw){document.getElementById('status').textContent='type a query';return;}
  const mode=document.getElementById('mode').value;
  const ex=SS.expandQuery(raw,mode);
@@ -540,8 +582,127 @@ function run(){
    html+=possibleHits.map(b=>renderHit(b,true,exWide)).join('');
  }
  res.innerHTML=html;}
+
+// ===================== URL state · search history (#4) · ☆ bookmarks (#7) — 2026-10-11 =====================
+// URL: ?q=…&t=<text>&cat=<category>&mode=<mode>&np=1 (possible matches off)&f.<field>=<value> — a search is a
+// shareable/bookmarkable link; on load the page restores it and runs. History + bookmarks live in vv-store.js
+// (this browser only; shared with every same-origin site, so the academy's ★ library sees them).
+const CAT_LABEL={mula:'mūlam',bhashya:'bhāṣyam',tika:'ṭīkās',prakarana:'prakaraṇas',vartika:'vārtikas',nibandha:'monographs'};
+const MODE_LABEL={cooccur:'same sentence',exact:'exact'};
+function getState(){
+ const f={};document.querySelectorAll('#filters [data-k]').forEach(el=>{if(el.value!=='')f[el.dataset.k]=el.value;});
+ const st={q:document.getElementById('q').value.trim()};
+ if(textSel.value)st.t=textSel.value;
+ const cat=document.getElementById('category').value;if(cat)st.cat=cat;
+ const mode=document.getElementById('mode').value;if(mode!=='sandhi')st.mode=mode;
+ if(!document.getElementById('showPossible').checked)st.np=1;
+ if(Object.keys(f).length)st.f=f;
+ return st;
+}
+function stateToParams(st){
+ const p=new URLSearchParams();if(st.q)p.set('q',st.q);if(st.t)p.set('t',st.t);if(st.cat)p.set('cat',st.cat);if(st.mode)p.set('mode',st.mode);if(st.np)p.set('np','1');
+ for(const k in(st.f||{}))p.set('f.'+k,st.f[k]);return p;
+}
+function paramsToState(p){
+ const st={q:p.get('q')||''};if(p.get('t'))st.t=p.get('t');if(p.get('cat'))st.cat=p.get('cat');if(p.get('mode'))st.mode=p.get('mode');if(p.get('np'))st.np=1;
+ const f={};for(const[k,v]of p.entries())if(k.startsWith('f.'))f[k.slice(2)]=v;if(Object.keys(f).length)st.f=f;return st;
+}
+function applyState(st){   // set every control from a state; does NOT run
+ const q=document.getElementById('q');q.value=st.q||'';document.getElementById('prev').textContent=SS.toDeva(q.value);
+ textSel.value=(st.t&&IDX.texts[st.t])?st.t:'';buildFilters();
+ for(const k in(st.f||{})){const el=document.querySelector(`#filters [data-k="${CSS.escape(k)}"]`);if(el)el.value=st.f[k];}
+ const cat=document.getElementById('category');cat.value=st.cat&&cat.querySelector(`option[value="${CSS.escape(st.cat)}"]`)?st.cat:'';
+ const mode=document.getElementById('mode');mode.value=st.mode&&mode.querySelector(`option[value="${CSS.escape(st.mode)}"]`)?st.mode:'sandhi';
+ document.getElementById('showPossible').checked=!st.np;
+}
+function searchUrl(){const p=stateToParams(getState()).toString();return location.href.split(/[?#]/)[0]+(p?'?'+p:'');}
+function saveUrlState(raw){try{history.replaceState(null,'',raw?searchUrl():location.pathname);}catch(e){}}
+function stateLabel(st){   // compact human label of the filters, e.g. "Kena-bhāṣya · ṭīkās · exact"
+ const bits=[];if(st.t)bits.push((IDX.texts[st.t]||{}).title||st.t);if(st.cat)bits.push(CAT_LABEL[st.cat]||st.cat);if(st.mode)bits.push(MODE_LABEL[st.mode]||st.mode);
+ for(const k in(st.f||{}))bits.push(k+'='+st.f[k]);if(st.np)bits.push('no possible');return bits.join(' · ');
+}
+// history: an explicit search (Enter / button / history pick) is recorded at once; a filter change is recorded once the
+// controls settle (1.2 s), so flipping the Text dropdown three times doesn't leave three entries.
+let histTimer=null;
+function queueHistory(now){
+ if(!window.VVStore)return;clearTimeout(histTimer);
+ const st=getState(),push=()=>VVStore.history.push({q:st.q,filters:(({q,...r})=>r)(st),label:stateLabel(st)});
+ if(now)push();else histTimer=setTimeout(push,1200);
+}
+const histEl=document.getElementById('hist');let histRows=[],histAct=-1;
+function openHist(){
+ if(!window.VVStore)return;
+ const typed=document.getElementById('q').value.trim(),all=VVStore.history.list();
+ histRows=all.map((e,i)=>({e,i})).filter(r=>!typed||r.e.q.includes(typed)||SS.toDeva(typed)&&r.e.q.includes(SS.toDeva(typed)));
+ if(!histRows.length){closeHist();return;}
+ histAct=-1;
+ histEl.innerHTML=`<div class="hh">recent searches</div>`+histRows.map((r,j)=>`<div class="hi" data-j="${j}" role="option"><span class="hq">${esc(r.e.q)}</span>`+
+  (r.e.label?`<span class="hf">${esc(r.e.label)}</span>`:'')+
+  `<button class="hb" data-act="edit" title="edit — load into the box without searching">✎</button><button class="hb" data-act="del" title="remove from history">✕</button></div>`).join('')+
+  `<span class="hclear" data-act="clear">clear history</span>`;
+ histEl.classList.add('open');
+}
+function closeHist(){histEl.classList.remove('open');histAct=-1;}
+function histState(r){return Object.assign({q:r.e.q},r.e.filters||{});}
+function pickHist(j,edit){
+ const r=histRows[j];if(!r)return;applyState(histState(r));closeHist();
+ const q=document.getElementById('q');
+ if(edit){q.focus();q.setSelectionRange(q.value.length,q.value.length);}else run(true);
+}
+histEl.addEventListener('mousedown',e=>e.preventDefault());   // keep focus in the box while clicking the dropdown
+histEl.addEventListener('click',e=>{
+ const act=e.target.dataset.act;
+ if(act==='clear'){VVStore.history.clear();closeHist();return;}
+ const row=e.target.closest('.hi');if(!row)return;const j=+row.dataset.j;
+ if(act==='del'){VVStore.history.remove(histRows[j].i);openHist();return;}
+ pickHist(j,act==='edit');
+});
+function markAct(){histEl.querySelectorAll('.hi').forEach((el,j)=>el.classList.toggle('act',j===histAct));const a=histEl.querySelector('.hi.act');if(a)a.scrollIntoView({block:'nearest'});}
+function onQKey(e){
+ const open=histEl.classList.contains('open');
+ if(e.key==='ArrowDown'){if(!open)openHist();else{histAct=Math.min(histAct+1,histRows.length-1);markAct();}e.preventDefault();}
+ else if(e.key==='ArrowUp'&&open){histAct=Math.max(histAct-1,-1);markAct();e.preventDefault();}
+ else if(e.key==='Escape'){closeHist();}
+ else if(e.key==='Enter'){e.preventDefault();if(open&&histAct>=0)pickHist(histAct,false);else run(true);}
+}
+const qEl=document.getElementById('q');
+qEl.addEventListener('focus',openHist);qEl.addEventListener('click',()=>{if(!histEl.classList.contains('open'))openHist();});
+qEl.addEventListener('input',()=>{if(document.activeElement===qEl)openHist();});
+qEl.addEventListener('blur',()=>setTimeout(()=>{if(document.activeElement!==qEl)closeHist();},120));
+// ☆ → bookmark (vv-store), then a small "add to collection…" popover (optional; click outside dismisses)
+let popEl=null;
+function closePop(){if(popEl){popEl.remove();popEl=null;}}
+function paintStar(btn,on){btn.classList.toggle('on',on);btn.textContent=on?'★':'☆';btn.title=on?'bookmarked — click to file in a collection or remove':'bookmark this passage (★ My library)';}
+function openPop(btn,bid){
+ closePop();
+ const cols=VVStore.collections.list(),mine=new Set(VVStore.collections.of(bid).map(c=>c.id));
+ popEl=document.createElement('div');popEl.className='colpop';
+ popEl.innerHTML=`<h4>★ bookmarked — add to collection…</h4>`+
+  (cols.length?cols.map(c=>`<label><input type="checkbox" data-c="${c.id}"${mine.has(c.id)?' checked':''}> ${esc(c.name)}</label>`).join(''):'<div style="color:#888;font-size:12px">no collections yet</div>')+
+  `<div class="cnew"><input placeholder="new collection, e.g. Ananda-vichAra-in-bhAShyam"><button data-act="new">add</button></div>`+
+  `<div class="cfoot"><span class="crm" data-act="rm">remove bookmark</span><button data-act="done">done</button></div>`;
+ document.body.appendChild(popEl);
+ const r=btn.getBoundingClientRect();popEl.style.left=Math.max(8,Math.min(r.left+scrollX,scrollX+innerWidth-popEl.offsetWidth-8))+'px';popEl.style.top=(r.bottom+scrollY+4)+'px';
+ popEl.addEventListener('change',e=>{const c=e.target.dataset.c;if(!c)return;e.target.checked?VVStore.collections.addItem(c,bid):VVStore.collections.removeItem(c,bid);});
+ const inp=popEl.querySelector('.cnew input');
+ const addNew=()=>{const n=inp.value.trim();if(!n)return;const cid=VVStore.collections.create(n);VVStore.collections.addItem(cid,bid);openPop(btn,bid);};
+ inp.addEventListener('keydown',e=>{if(e.key==='Enter')addNew();if(e.key==='Escape')closePop();});
+ popEl.addEventListener('click',e=>{const a=e.target.dataset.act;if(a==='new')addNew();else if(a==='done')closePop();else if(a==='rm'){VVStore.bookmarks.remove(bid);paintStar(btn,false);closePop();}});
+}
+document.getElementById('results').addEventListener('click',e=>{
+ const btn=e.target.closest('.star');if(!btn||!window.VVStore)return;
+ const rec=HITS[+btn.dataset.i];if(!rec)return;
+ const ex=VVStore.bookmarks.find(rec.url,rec.excerpt),bid=ex?ex.id:VVStore.bookmarks.add(rec);
+ paintStar(btn,true);openPop(btn,bid);e.stopPropagation();
+});
+document.addEventListener('click',e=>{if(popEl&&!popEl.contains(e.target))closePop();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closePop();});
+// ★ My library → the library page of the reading site this reader last used (academy by default)
+if(window.VVStore){const ls=VVStore.lastSite();if(ls&&ls.base)document.getElementById('libLink').href=ls.base+'library.html';}
+else document.getElementById('libLink').style.display='none';
 buildFilters();
 document.getElementById('status').textContent=`ready — ${B.length.toLocaleString()} blocks across ${Object.keys(IDX.texts).length} texts. Type to search.`;
+if(location.search){const st=paramsToState(new URLSearchParams(location.search));if(st.q){applyState(st);run(true);}}
 // Offline + instant repeat loads: the service worker reactively caches whatever's fetched (the
 // ~6.6 MB-gzipped index_data.js, the library, and any scan-PDF shards the visitor opens), so a
 // second visit is served from cache. Bump sw.js's CACHE_NAME on every deploy so clients pick up a
