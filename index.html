@@ -111,10 +111,18 @@ const SVADHYAYA={'bg-bhashya':'gita','isha-bhashya':'isha','kena-pada-bhashya':'
  'taittiriya-bhashya':'taitiriya','aitareya-bhashya':'aitareya','chandogya-bhashya':'chandogya','brihad-bhashya':'brha',
  'brahmasutra-bhashya':'bs','vivekacudamani':'vc','panchadashi-ramkrishna':'pd','panchadashi-modak-tika':'pd',
  'vicharasagara':'vicharasagara','atmabodha':'ab','upadesha-saram':'ups','saddarshanam':'sad',
- 'vrk-gita-upanishads':'vrk-gita-upanishads','vaiyasika-nyayamala':'bs','brihad-vartika-tika':'brha','brihadaranyaka-vartika-sara':'brha'};
+ 'vrk-gita-upanishads':'vrk-gita-upanishads','vaiyasika-nyayamala':'bs','brihad-vartika-tika':'brha','brihadaranyaka-vartika-sara':'brha',
+ // Ānandagiri-ṭīkā: every upaniṣad/Gītā reading view carries it as the 'tika' lane (2026-10-10) — except the Kena
+ // vākya-bhāṣya ṭīkā (the Kena view has only the pada-bhāṣya), so anandagiri-kena-vakya gets no link
+ 'anandagiri-isha':'isha','anandagiri-kena-pada':'kena','anandagiri-katha':'kathaka',
+ 'anandagiri-prashna':'prashna','anandagiri-mundaka':'mundaka','anandagiri-mandukya':'mandukya','anandagiri-taittiriya':'taitiriya',
+ 'anandagiri-aitareya':'aitareya','anandagiri-chandogya':'chandogya','anandagiri-brihad':'brha','anandagiri-gita':'gita'};
 // commentary-lane texts: the reading view shows them only when that commentary is chosen → the link carries
 // ?side=<lane> (+ &vk=<fold-out id> for a vārttika-ṭīkā note) so sync.js's highlighter opens the lane first.
 const SV_SIDE={'vaiyasika-nyayamala':'vnm','brihad-vartika-tika':'vartika','brihadaranyaka-vartika-sara':'vsara'};
+for(const t in SVADHYAYA)if(t.startsWith('anandagiri-'))SV_SIDE[t]='tika';
+// a lane that is one SECTION of a mixed index (bg-bhashya's Ānandagiri) — opened only for hits in that section
+const SV_SECTION_SIDE={'bg-bhashya':{anandagiri:'tika'}};
 // sections a reading view actually carries — a hit in any other section of the same index (the Gītā view has no
 // Bhāṣyārka-prakāśa / Anubhūtisvarūpa) gets NO svādhyāya link: it would land on a page without the matched text.
 const SV_SECTIONS={'bg-bhashya':new Set(['mula','bhashya','anandagiri'])};
@@ -124,6 +132,12 @@ const SV_SECTIONS={'bg-bhashya':new Set(['mula','bhashya','anandagiri'])};
 // fragment (:~:text=) also scrolls-to + highlights the matched span. Falls back to the entry page if the
 // ref can't be resolved (e.g. page-indexed panchadashi-ramkrishna, or an intro block with no mantra).
 function svRef(b){
+ // Ānandagiri refs are codes: BR_C02_S01_V20_B07 → 2.1.20, MK_C03_K15 → '3.15 · kārikā', *_I## (an intro) → chapter only
+ if(b.t.startsWith('anandagiri-')){
+  const m=String(b.c.ref||'').match(/_C(\d+)(?:_S(\d+))?(?:_([VvK])(\d+))?/); if(!m)return null;
+  const p=[+m[1]]; if(m[2])p.push(+m[2]); if(m[4])p.push(+m[4]);
+  return p.join('.')+(m[3]==='K'?' · kārikā':'');
+ }
  const flds=((IDX.texts[b.t]||{}).fields)||[], parts=[];
  for(const f of flds){
   if(f.type==='int'&&f.k!=='page'&&b.c[f.k]!=null)parts.push(b.c[f.k]);
@@ -150,7 +164,8 @@ function svadhyayaLink(b,matchedText){
  // (robust to सन्धि/पद layer + saved mode, unlike a browser :~:text= fragment); #v-<ref> scrolls to the verse.
  let url=`${SVADHYAYA_BASE}${hit.file}`;
  if(matchedText)url+=`?hl=${encodeURIComponent(matchedText.trim())}`;
- if(matchedText&&SV_SIDE[b.t])url+=`&side=${SV_SIDE[b.t]}`+(b.c.tk?`&vk=${encodeURIComponent(b.c.tk)}`:'');
+ const side=SV_SIDE[b.t]||(SV_SECTION_SIDE[b.t]||{})[b.c.section];
+ if(matchedText&&side)url+=`&side=${side}`+(b.c.tk?`&vk=${encodeURIComponent(b.c.tk)}`:'');
  if(hit.exact)url+=`#v-${encodeURIComponent(ref)}`;
  return url;
 }
