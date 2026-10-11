@@ -1,16 +1,17 @@
 // Two caches (2026-10-10, Harsha: a page-only deploy re-downloaded the whole ~12 MB-gzipped index):
-//  • DATA_CACHE (persistent, never renamed) — CONTENT-HASHED files (index_data.<hash>.js, svadhyaya-refidx.<hash>.js).
+//  • DATA_CACHE (persistent, never renamed) — CONTENT-HASHED files (index_manifest.<hash>.js, svadhyaya-refidx.<hash>.js, and
+//    the per-text index shards shards/<id>.<hash>.json — a deploy re-fetches only the shards whose text changed).
 //    A hashed name can never be stale (new content ⇒ new name), so they are cache-first and SURVIVE deploys; on
 //    activate only names no longer in HASHED_KEEP are pruned. A deploy that doesn't change the index costs ~40 KB.
 //  • CACHE_NAME (bumped on every deploy by searchtool/sync_search.js) — the small shell (index.html, viewer, lib,
 //    font) + scan-PDF shards, cache-first; `activate` deletes the old one and index.html's controllerchange
 //    handler reloads the page once, so a deploy still lands automatically.
 // sync_search.js rewrites CACHE_NAME and HASHED_KEEP — keep both on one line each.
-const CACHE_NAME = 'sanskrit-search-v57';
+const CACHE_NAME = 'sanskrit-search-v58';
 const DATA_CACHE = 'sanskrit-search-data';
-const HASHED_KEEP = ["index_data.7b9bbf203b.js","svadhyaya-refidx.3d5874e435.js"];
+const HASHED_KEEP = ["index_manifest.da38f15fd0.js","svadhyaya-refidx.3d5874e435.js","advaita-makaranda.752f9353c5.json","aitareya-bhashya.3ddd34c7e3.json","anandagiri-aitareya.2031d7bbad.json","anandagiri-brihad.8a72cb73a9.json","anandagiri-chandogya.065df016f0.json","anandagiri-gita.74f0be5d36.json","anandagiri-isha.66caebeea2.json","anandagiri-katha.acbcbeeeac.json","anandagiri-kena-pada.8904f4728f.json","anandagiri-kena-vakya.251936a9b6.json","anandagiri-mandukya.d1800fd1bf.json","anandagiri-mundaka.633be33aa8.json","anandagiri-prashna.997b9c7189.json","anandagiri-taittiriya.397297326a.json","anubhutiprakasha.fce7d5ed25.json","atmabodha.ec72e285c0.json","bg-bhashya.8e9b1e76d6.json","brahmasutra-bhashya.b1d0e32c0d.json","brihad-bhashya.e8317fef90.json","brihad-vartika-tika.a1442f4614.json","brihad-vartika.60d3ad0c24.json","brihadaranyaka-vartika-sara.c5d6fd4f8d.json","chandogya-bhashya.c22dc5c14b.json","dakshinamurti-stotra.824c9cfe52.json","hastamalakiya-bhashya.d1222948c7.json","isha-bhashya.df50f3133a.json","katha-bhashya.cb7b0ad153.json","kena-pada-bhashya.a943ac108b.json","kena-vakya-bhashya.f1930976fb.json","madhusudani-gita.72a1e23864.json","mandukya-bhashya.967ece19fd.json","mundaka-bhashya.598a2767bc.json","naishkarmyasiddhi.800c1fa2ad.json","nilakanthi-gita.b3b2e10b67.json","panchadashi-modak-tika.510b220665.json","panchadashi-ramkrishna.77532b4ddc.json","prashna-bhashya.983ce99e16.json","saddarshanam.242cb1d26e.json","sarvavedantasiddhantasarasangraha.1fc34d7eeb.json","shatashloki.a2e3b06c0e.json","siddhantabindu.bd0ae943bd.json","sridhari-gita.fbbf0bda69.json","taittiriya-bhashya.379d11ae3c.json","taittiriya-vartika.1656e2705b.json","upadesha-saram.6c67bece4d.json","upadeshasahasri.3e1fcae6f2.json","vaiyasika-nyayamala.52bc82760b.json","vedantasara.eca9731f34.json","vicharasagara.607dcea2cc.json","vivekacudamani.d5b1738d09.json","vrk-gita-upanishads.da4f10923c.json"];
 const ASSETS = ['./', './index.html', './viewer.html', './lib/sanskrit-search.js', './fonts/NotoSerifDevanagari-Regular.woff2'];
-const HASHED = /\.[0-9a-f]{10}\.js$/;
+const HASHED = /\.[0-9a-f]{10}\.(js|json)$/;   // index_manifest/refidx .js + the per-text index shards (shards/*.json, 2026-10-12)
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)).catch(() => {}));

@@ -81,7 +81,7 @@
 <div id="status">loading…</div>
 <div id="results"></div>
 
-<script src="index_data.7b9bbf203b.js"></script>
+<script src="index_manifest.da38f15fd0.js"></script>
 <script src="svadhyaya-refidx.3d5874e435.js"></script>
 <script src="lib/sanskrit-search.js"></script>
 <script src="vv-store.js"></script>
@@ -89,8 +89,14 @@
 // All normalization / sandhi / matching / highlighting lives in the library (lib/sanskrit-search.js).
 // This page owns only the UI: index load, per-text filters, and rendering.
 const SS=window.SanskritSearch;
-const IDX=window.SEARCH_INDEX, B=IDX.blocks;
-for(const b of B){b._n=SS.normalize(b.s);b._nc=SS.normalize(b.s,true);}   // precompute normalized forms once
+// The index arrives in per-text SHARDS (2026-10-12): index_manifest.js (tiny, loaded above) lists the texts and the
+// content-hashed shard files; loadIndex() fetches them in parallel and B grows (kept in index order) as each lands, so
+// the page is usable at once and a query is re-run as more text arrives. A deploy re-downloads only changed shards
+// (the sw keeps hashed files). Normalized forms are computed lazily (norm) + in idle slices, never in one blocking pass.
+// From file:// (no fetch) it falls back to the single index_data.js bundle.
+const MANI=window.SEARCH_MANIFEST||{texts:{},shards:[]};
+const IDX={texts:Object.assign({},MANI.texts),blocks:[]}, B=IDX.blocks;
+function norm(b){if(b._n===undefined){b._n=SS.normalize(b.s);b._nc=SS.normalize(b.s,true);}return b;}
 const textSel=document.getElementById('text');
 textSel.innerHTML='<option value="">All texts</option>'+
  Object.entries(IDX.texts).map(([id,t])=>`<option value="${id}">${t.title}</option>`).join('');
@@ -559,10 +565,12 @@ function renderHit(b,possible,useEx){
  }
  return `<div class="hit${possible?' possible':''}"><div class="meta">${star} ${locStr(b)} ${badge} ${cp} ${scanA} ${asA} ${svA}</div><div class="snip">${snip}</div></div>`;
 }
-function run(explicit){
- const raw=document.getElementById('q').value.trim(),res=document.getElementById('results');res.innerHTML='';HITS.length=0;closeHist();closePop();
+function run(explicit){   // explicit: true = Enter/button/history pick; 'rerun' = a shard landed (no history, keep popovers)
+ const raw=document.getElementById('q').value.trim(),res=document.getElementById('results');
+ if(explicit==='rerun'&&popEl){clearTimeout(rerunT);rerunT=setTimeout(()=>run('rerun'),1000);return;}   // don't yank results from under an open ☆ popover
+ res.innerHTML='';HITS.length=0;if(explicit!=='rerun'){closeHist();closePop();}
  saveUrlState(raw);
- if(raw)queueHistory(explicit===true);
+ if(raw){res.dataset.ran='1';if(explicit!=='rerun')queueHistory(explicit===true);}
  if(!raw){document.getElementById('status').textContent='type a query';return;}
  const mode=document.getElementById('mode').value;
  const ex=SS.expandQuery(raw,mode);
@@ -577,6 +585,7 @@ function run(explicit){
  let preciseHits=[],possibleHits=[];
  for(const b of B){
    if(!passFilters(b))continue;
+   norm(b);
    const precise=SS.matches(b,ex);
    if(precise){preciseHits.push(b);continue;}
    if(exWide&&SS.matches(b,exWide))possibleHits.push(b);
@@ -585,7 +594,8 @@ function run(explicit){
  const total=preciseHits.length+possibleHits.length;
  document.getElementById('status').textContent=`${total} hit${total!=1?'s':''} for “${ex.q}”`+
    (possibleHits.length?`  (${preciseHits.length} precise + ${possibleHits.length} possible)`:'')+
-   (mode==='sandhi'?`  (stems: ${ex.stems.join(' + ')})`:'')+(total>1000?' (first 1000)':'');
+   (mode==='sandhi'?`  (stems: ${ex.stems.join(' + ')})`:'')+(total>1000?' (first 1000)':'')+
+   (LOAD.ready?'':`  — index still loading (${LOAD.pct()}%), results will update…`);
  let html=preciseHits.map(b=>renderHit(b,false,ex)).join('');
  if(possibleHits.length){
    html+=`<div class="section-div">possible matches (${possibleHits.length}) — sandhi-fusion guesses, not confirmed</div>`;
@@ -711,7 +721,39 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closePop();});
 if(window.VVStore){const ls=VVStore.lastSite();if(ls&&ls.base)document.getElementById('libLink').href=ls.base+'library.html';}
 else document.getElementById('libLink').style.display='none';
 buildFilters();
-document.getElementById('status').textContent=`ready — ${B.length.toLocaleString()} blocks across ${Object.keys(IDX.texts).length} texts. Type to search.`;
+const LOAD={ready:false,got:0,total:1,slots:[],pct(){return Math.floor(100*this.got/this.total);}};
+let rerunT=null;
+const NQ=[];   // shards waiting for idle pre-normalization
+function onShard(sl){   // a shard landed: rebuild B in index order; re-run the current query (debounced) so hits fill in
+ B.length=0;for(const x of LOAD.slots)if(x)for(const b of x)B.push(b);
+ if(sl){NQ.push(sl);idleNorm();}
+ const st=document.getElementById('status'), q=document.getElementById('q').value.trim(), ran=document.getElementById('results').dataset.ran;
+ if(q&&ran){clearTimeout(rerunT);rerunT=setTimeout(()=>run('rerun'),LOAD.ready?0:400);return;}
+ st.textContent=LOAD.ready?`ready — ${B.length.toLocaleString()} blocks across ${Object.keys(IDX.texts).length} texts. Type to search.`
+   :`loading the index — ${LOAD.pct()}% (${B.length.toLocaleString()} blocks so far; you can search already)`;
+}
+let normBusy=false;
+function idleNorm(){   // pre-normalize in ~12 ms slices so the first search doesn't pay for all of it, and the page never freezes
+ if(normBusy)return;normBusy=true;let sl=null,i=0;
+ const step=()=>{const t0=performance.now();
+   while(performance.now()-t0<12){if(!sl||i>=sl.length){sl=NQ.shift();i=0;if(!sl){normBusy=false;return;}}norm(sl[i++]);}
+   setTimeout(step,0);};
+ setTimeout(step,0);
+}
+function loadScript(src){return new Promise((ok,ko)=>{const el=document.createElement('script');el.src=src;el.onload=ok;el.onerror=ko;document.head.appendChild(el);});}
+async function loadIndex(){
+ const sh=MANI.shards||[];
+ if(location.protocol==='file:'||!sh.length){   // local double-click: no fetch() → the one-file bundle
+   await loadScript('index_data.js');const d=window.SEARCH_INDEX;Object.assign(IDX.texts,d.texts);LOAD.slots=[d.blocks];LOAD.got=LOAD.total=1;LOAD.ready=true;onShard(d.blocks);return;
+ }
+ LOAD.total=sh.reduce((a,x)=>a+x.b,0);LOAD.slots=new Array(sh.length);let next=0;
+ const worker=async()=>{while(next<sh.length){const i=next++;
+   let r;for(let a=0;a<3;a++){try{r=await fetch(sh[i].f);if(r.ok)break;}catch(e){}await new Promise(z=>setTimeout(z,800*(a+1)));}
+   if(!r||!r.ok)throw new Error(sh[i].f);
+   const d=await r.json();Object.assign(IDX.texts,d.texts);LOAD.slots[i]=d.blocks;LOAD.got+=sh[i].b;if(LOAD.got>=LOAD.total)LOAD.ready=true;onShard(d.blocks);}};
+ await Promise.all(Array.from({length:6},worker));if(!LOAD.ready){LOAD.ready=true;onShard();}
+}
+loadIndex().catch(e=>{document.getElementById('status').textContent=`⚠ part of the index failed to load (${e.message}) — results may be incomplete; reload to retry.`;LOAD.ready=true;});
 if(location.search){const st=paramsToState(new URLSearchParams(location.search));if(st.q){applyState(st);run(true);}}
 // Offline + instant repeat loads: the service worker reactively caches whatever's fetched (the
 // ~6.6 MB-gzipped index_data.js, the library, and any scan-PDF shards the visitor opens), so a
