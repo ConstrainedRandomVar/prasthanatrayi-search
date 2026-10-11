@@ -81,7 +81,7 @@
 <div id="status">loading…</div>
 <div id="results"></div>
 
-<script src="index_data.d103e3bdc7.js"></script>
+<script src="index_data.7b9bbf203b.js"></script>
 <script src="svadhyaya-refidx.3d5874e435.js"></script>
 <script src="lib/sanskrit-search.js"></script>
 <script src="vv-store.js"></script>
@@ -140,7 +140,7 @@ const SVADHYAYA={'bg-bhashya':'gita','isha-bhashya':'isha','kena-pada-bhashya':'
  'taittiriya-bhashya':'taitiriya','aitareya-bhashya':'aitareya','chandogya-bhashya':'chandogya','brihad-bhashya':'brha',
  'brahmasutra-bhashya':'bs','vivekacudamani':'vc','panchadashi-ramkrishna':'pd','panchadashi-modak-tika':'pd',
  'vicharasagara':'vicharasagara','atmabodha':'ab','upadesha-saram':'ups','saddarshanam':'sad',
- 'vrk-gita-upanishads':'vrk-gita-upanishads','vaiyasika-nyayamala':'bs','brihad-vartika-tika':'brha','brihadaranyaka-vartika-sara':'brha',
+ 'vrk-gita-upanishads':'vrk-gita-upanishads','vaiyasika-nyayamala':'bs','brihad-vartika':'brha','taittiriya-vartika':'taitiriya','brihad-vartika-tika':'brha','brihadaranyaka-vartika-sara':'brha',
  // Ānandagiri-ṭīkā: every upaniṣad/Gītā reading view carries it as the 'tika' lane (2026-10-10) — except the Kena
  // vākya-bhāṣya ṭīkā (the Kena view has only the pada-bhāṣya), so anandagiri-kena-vakya gets no link
  'anandagiri-isha':'isha','anandagiri-kena-pada':'kena','anandagiri-katha':'kathaka',
@@ -148,7 +148,7 @@ const SVADHYAYA={'bg-bhashya':'gita','isha-bhashya':'isha','kena-pada-bhashya':'
  'anandagiri-aitareya':'aitareya','anandagiri-chandogya':'chandogya','anandagiri-brihad':'brha','anandagiri-gita':'gita'};
 // commentary-lane texts: the reading view shows them only when that commentary is chosen → the link carries
 // ?side=<lane> (+ &vk=<fold-out id> for a vārttika-ṭīkā note) so sync.js's highlighter opens the lane first.
-const SV_SIDE={'vaiyasika-nyayamala':'vnm','brihad-vartika-tika':'vartika','brihadaranyaka-vartika-sara':'vsara'};
+const SV_SIDE={'vaiyasika-nyayamala':'vnm','brihad-vartika':'vartika','taittiriya-vartika':'vartika','brihad-vartika-tika':'vartika','brihadaranyaka-vartika-sara':'vsara'};
 for(const t in SVADHYAYA)if(t.startsWith('anandagiri-'))SV_SIDE[t]='tika';
 // a lane that is one SECTION of a mixed index (bg-bhashya's Ānandagiri) — opened only for hits in that section
 const SV_SECTION_SIDE={'bg-bhashya':{anandagiri:'tika'}};
@@ -167,6 +167,7 @@ function svRef(b){
   const p=[+m[1]]; if(m[2])p.push(+m[2]); if(m[4])p.push(+m[4]);
   return p.join('.')+(m[3]==='K'?' · kārikā':'');
  }
+ if(b.c.sv)return b.c.sv;   // a precomputed reading-view anchor (the AS vārttikas: AS numbering ≠ the lane's — build_vartika_index.py; vārtikasāra intro)
  const flds=((IDX.texts[b.t]||{}).fields)||[], parts=[];
  for(const f of flds){
   if(f.type==='int'&&f.k!=='page'&&b.c[f.k]!=null)parts.push(b.c[f.k]);
@@ -186,7 +187,14 @@ function svFile(idx,ref){
 }
 // The reader's last-used reading site (vv-store.js lastSite): a visitor of the PUBLIC स्वाध्याय-दीपिका is linked back to
 // it, not to the academy; everyone else keeps the academy base.
-function svBase(){const ls=window.VVStore&&VVStore.lastSite();return(ls&&ls.site==='public'&&ls.base)?ls.base:SVADHYAYA_BASE;}
+// The site the reader CAME FROM (document.referrer) wins — a stored lastSite can be stale (another tab, an old visit).
+// Only the academy and the public site carry these reading views (the sister site doesn't) → anything else = academy.
+const SV_BASE=(()=>{
+ const ok=s=>s==='academy'||s==='public';
+ try{const r=document.referrer;if(r&&window.VVStore&&ok(VVStore.siteOf(r))){const u=new URL(r);return u.origin+'/'+u.pathname.split('/')[1]+'/';}}catch(e){}
+ const ls=window.VVStore&&VVStore.lastSite();return(ls&&ok(ls.site)&&ls.base)?ls.base:SVADHYAYA_BASE;
+})();
+function svBase(){return SV_BASE;}
 function svadhyayaLink(b,matchedText){
  const o=SVADHYAYA[b.t]; if(!o)return null;
  if(SV_SECTIONS[b.t]&&!SV_SECTIONS[b.t].has(b.c.section))return null;
@@ -473,13 +481,13 @@ const SELF_HOSTED_SIZE=40;
 // per-page text and HIGHLIGHTS the matched sandhi surface (far better than a PDF: real highlight,
 // native Ctrl-F, no alignment quirks). `scanDir` = original scan, offered as a secondary "verify"
 // link. `dir` (PDF shards) is the fallback for texts with no HTML viewer yet (e.g. BG bhāṣyārka).
+// Retired 2026-10-12 (Harsha): texts hosted IN FULL in ग्रन्थाः (Vicārasāgara, the Bṛhad vārtikasāra) — every hit links
+// there; their read/scan copies were removed from this repo (originals: ~/Projects/sanskrit-texts). PD stays (WIP).
 const SELF_HOSTED={
  'panchadashi-ramkrishna':{viewer:true,slug:'panchadashi',pageField:'page',label:'read',scanDir:'texts/panchadashi-scan'},
  'dakshinamurti-stotra':{viewer:true,slug:'dakshinamurti',pageField:'page',label:'read',scanDir:'texts/dakshinamurti-scan'},
- 'brihadaranyaka-vartika-sara':{viewer:true,slug:'bavs',pageField:'page',label:'read',scanDir:'texts/bavs-scan'},
  'siddhantabindu':{viewer:true,slug:'siddhantabindu',pageField:'page',label:'read',scanDir:'texts/siddhantabindu-scan'},
  'naishkarmyasiddhi':{viewer:true,slug:'naishkarmyasiddhi',pageField:'page',label:'read',scanDir:'texts/naishkarmyasiddhi-scan'},
- 'vicharasagara':{viewer:true,slug:'vicharasagara',pageField:'page',label:'read',scanDir:'texts/vicharasagara-scan'},
  'anubhutiprakasha':{viewer:true,slug:'anubhutiprakasha',pageField:'page',label:'read',scanDir:'texts/anubhutiprakasha-scan'},
  'upadeshasahasri':{viewer:true,slug:'upadeshasahasri',pageField:'page',label:'read',scanDir:'texts/upadeshasahasri-scan'},
  'vedantasara':{viewer:true,slug:'vedantasara',pageField:'page',label:'read',scanDir:'texts/vedantasara-scan'},
@@ -530,13 +538,15 @@ function renderHit(b,possible,useEx){
  const m1i=rawSnip.indexOf(SS.M1), m2i=rawSnip.indexOf(SS.M2);
  const matchedText=(m1i!==-1&&m2i!==-1)?rawSnip.slice(m1i+1,m2i):null;
  const cp=`<span class="copy" onclick="navigator.clipboard.writeText(this.dataset.c);this.textContent='copied ✓'" data-c="${esc(b.s)}">copy text</span>`;
- const src=sourceLink(b,matchedText);
- const asA=src?`<a class="advaita" href="${esc(src.url)}" target="_blank" rel="noopener">${src.label} ↗</a>`:'';
  const svU=svadhyayaLink(b,matchedText);
+ // a ग्रन्थाः hit needs no self-hosted read/scan link (the reading view IS the readable text, Harsha 2026-10-12);
+ // the external canonical source (advaitaśārada / gitasupersite) stays
+ const src=svU?(gitaSupersiteLink(b)||advaitasharadaLink(b,matchedText)?sourceLink(b,matchedText):null):sourceLink(b,matchedText);
+ const asA=src?`<a class="advaita" href="${esc(src.url)}" target="_blank" rel="noopener">${src.label} ↗</a>`:'';
  const svA=svU?`<a class="advaita svadhyaya" href="${esc(svU)}" target="_blank" rel="noopener" title="open this passage in the ग्रन्थाः reading view">ग्रन्थाः ↗</a>`:'';
  // Secondary original-scan link, shown only when the primary is a readable typeset re-render (so the
  // reader can verify the OCR against the actual page image).
- const scan=selfHostedScanLink(b);
+ const scan=svU?null:selfHostedScanLink(b);
  const scanA=(scan&&(!src||src.url!==scan.url))?`<a class="advaita" href="${esc(scan.url)}" target="_blank" rel="noopener">${scan.label} ↗</a>`:'';
  const badge=possible?'<span class="possible-badge">possible</span>':'';
  // scan (verify) link first, primary read/source link rightmost (Harsha, 2026-08-18).

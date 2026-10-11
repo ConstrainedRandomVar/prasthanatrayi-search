@@ -70,14 +70,10 @@ const TEXTS={
    scanDir:'texts/bg-bhashya', slug:'bg-bhashya', size:40},
  'dakshinamurti-stotra':{title:'Dakṣiṇāmūrti-stotra — Mānasollāsa & Tattvasudhā', data:'texts/dakshinamurti/pages.js',
    scanDir:'texts/dakshinamurti-scan', slug:'dakshinamurti', size:40},
- 'brihadaranyaka-vartika-sara':{title:'Bṛhadāraṇyaka-vārtika-sāra (Vidyāraṇya)', data:'texts/bavs/pages.js',
-   scanDir:'texts/bavs-scan', slug:'bavs', size:40},
  'siddhantabindu':{title:'Siddhāntabindu — Daśaślokī (Madhusūdana Sarasvatī)', data:'texts/siddhantabindu/pages.js',
    scanDir:'texts/siddhantabindu-scan', slug:'siddhantabindu', size:40},
  'naishkarmyasiddhi':{title:'Naiṣkarmyasiddhi (Sureśvarācārya)', data:'texts/naishkarmyasiddhi/pages.js',
    scanDir:'texts/naishkarmyasiddhi-scan', slug:'naishkarmyasiddhi', size:40},
- 'vicharasagara':{title:'Vicāra-sāgara (Vāsudeva Brahmendra Sarasvatī)', data:'texts/vicharasagara/pages.js',
-   scanDir:'texts/vicharasagara-scan', slug:'vicharasagara', size:40},
  'anubhutiprakasha':{title:'Anubhūti-prakāśa (Vidyāraṇya)', data:'texts/anubhutiprakasha/pages.js',
    scanDir:'texts/anubhutiprakasha-scan', slug:'anubhutiprakasha', size:40},
  'upadeshasahasri':{title:'Upadeśasāhasrī (Śaṅkara) — Ānandagiri-ṭīkā', data:'texts/upadeshasahasri/pages.js',
@@ -90,8 +86,8 @@ const TEXTS={
 // Texts whose pages.js holds RECONSTRUCTED LAYOUT HTML (build_layout_pages.py) rather than flat text.
 // For these the page string is injected as HTML; the rest (e.g. bg-bhashya, built from index blocks)
 // stays flat text with <br>.
-const LAYOUT=new Set(['panchadashi-ramkrishna','dakshinamurti-stotra','brihadaranyaka-vartika-sara',
- 'siddhantabindu','naishkarmyasiddhi','vicharasagara','anubhutiprakasha','upadeshasahasri','vedantasara',
+const LAYOUT=new Set(['panchadashi-ramkrishna','dakshinamurti-stotra',
+ 'siddhantabindu','naishkarmyasiddhi','anubhutiprakasha','upadeshasahasri','vedantasara',
  'bg-bhashya']);
 const P=new URLSearchParams(location.search);
 const id=P.get('text'), hl=P.get('hl')||'';
