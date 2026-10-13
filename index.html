@@ -81,7 +81,7 @@
 <div id="status">loading…</div>
 <div id="results"></div>
 
-<script src="index_manifest.94e784eb01.js"></script>
+<script src="index_manifest.5f736a62c7.js"></script>
 <script src="svadhyaya-refidx.3d5874e435.js"></script>
 <script src="lib/sanskrit-search.js"></script>
 <script src="lib/sv-links.js"></script>
@@ -123,7 +123,7 @@ document.getElementById('q').addEventListener('keydown',onQKey);
 // Ānandagirī's). "prakarana" matches the site's own grouping (whole-text, not split by internal
 // mula/bhashya — Hastāmalakīya has both but is grouped here as one unit, same as advaitasharada's
 // own display/prakarana/ URL section). Vārtika texts (no section field at all, and a distinct genre
-// from ṭīkā) and BG's anubhuti/bhashyarka sections have no bucket — only visible under "all texts".
+// from ṭīkā) and BG's anubhuti section have no bucket — only visible under "all texts" (bhashyarka → ṭīkā since 2026-10-14).
 const TIKA_PREFIX='anandagiri-';
 const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedantasiddhantasarasangraha','vivekacudamani','panchadashi-ramkrishna','dakshinamurti-stotra','siddhantabindu','naishkarmyasiddhi','vicharasagara','anubhutiprakasha','upadeshasahasri','vedantasara','advaita-makaranda','atmabodha','upadesha-saram','saddarshanam']);
 // Vārtika-genre works (verse expositions of a bhāṣya). Previously bucketless ("only under all
@@ -181,7 +181,7 @@ function blockCategory(b){
  if(VARTIKA_TEXTS.has(b.t))return 'vartika';
  if(NIBANDHA_TEXTS.has(b.t))return 'nibandha';
  if(b.t==='bg-bhashya'){
-   if(b.c.section==='anandagiri')return 'tika';
+   if(b.c.section==='anandagiri'||b.c.section==='bhashyarka')return 'tika';   // Bhāṣyārka-prakāśa (Rāmarāya-kavi) = a ṭīkā on the bhāṣya
    if(b.c.section==='mula')return 'mula';
    if(b.c.section==='bhashya')return 'bhashya';
    return null;
