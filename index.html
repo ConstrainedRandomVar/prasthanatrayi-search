@@ -84,6 +84,7 @@
 <script src="index_manifest.23964c2dc5.js"></script>
 <script src="svadhyaya-refidx.3d5874e435.js"></script>
 <script src="lib/sanskrit-search.js"></script>
+<script src="lib/sv-links.js"></script>
 <script src="vv-store.js"></script>
 <script>
 // All normalization / sandhi / matching / highlighting lives in the library (lib/sanskrit-search.js).
@@ -141,56 +142,11 @@ const NIBANDHA_TEXTS=new Set(['vrk-gita-upanishads']);
 // must be added here + indexed (see CLAUDE.md #7e). atmabodha/upadesha-saram/panchadashi-modak-tika have no
 // advaitaśārada page or scan, so this is their ONLY source link.
 const SVADHYAYA_BASE='https://constrainedrandomvar.github.io/vedantic-vyakarana-academy/';
-const SVADHYAYA={'bg-bhashya':'gita','isha-bhashya':'isha','kena-pada-bhashya':'kena','kena-vakya-bhashya':'kena',
- 'katha-bhashya':'kathaka','prashna-bhashya':'prashna','mundaka-bhashya':'mundaka','mandukya-bhashya':'mandukya',
- 'taittiriya-bhashya':'taitiriya','aitareya-bhashya':'aitareya','chandogya-bhashya':'chandogya','brihad-bhashya':'brha',
- 'brahmasutra-bhashya':'bs','vivekacudamani':'vc','panchadashi-ramkrishna':'pd','panchadashi-modak-tika':'pd',
- 'vicharasagara':'vicharasagara','atmabodha':'ab','upadesha-saram':'ups','saddarshanam':'sad',
- 'vrk-gita-upanishads':'vrk-gita-upanishads','vaiyasika-nyayamala':'bs','brihad-vartika':'brha','taittiriya-vartika':'taitiriya','brihad-vartika-tika':'brha','brihadaranyaka-vartika-sara':'brha',
- // Ānandagiri-ṭīkā: every upaniṣad/Gītā reading view carries it as the 'tika' lane (2026-10-10) — except the Kena
- // vākya-bhāṣya ṭīkā (the Kena view has only the pada-bhāṣya), so anandagiri-kena-vakya gets no link
- 'anandagiri-isha':'isha','anandagiri-kena-pada':'kena','anandagiri-katha':'kathaka',
- 'anandagiri-prashna':'prashna','anandagiri-mundaka':'mundaka','anandagiri-mandukya':'mandukya','anandagiri-taittiriya':'taitiriya',
- 'anandagiri-aitareya':'aitareya','anandagiri-chandogya':'chandogya','anandagiri-brihad':'brha','anandagiri-gita':'gita'};
-// commentary-lane texts: the reading view shows them only when that commentary is chosen → the link carries
-// ?side=<lane> (+ &vk=<fold-out id> for a vārttika-ṭīkā note) so sync.js's highlighter opens the lane first.
-const SV_SIDE={'vaiyasika-nyayamala':'vnm','brihad-vartika':'vartika','taittiriya-vartika':'vartika','brihad-vartika-tika':'vartika','brihadaranyaka-vartika-sara':'vsara'};
-for(const t in SVADHYAYA)if(t.startsWith('anandagiri-'))SV_SIDE[t]='tika';
-// a lane that is one SECTION of a mixed index (bg-bhashya's Ānandagiri) — opened only for hits in that section
-const SV_SECTION_SIDE={'bg-bhashya':{anandagiri:'tika'}};
-// sections a reading view actually carries — a hit in any other section of the same index (the Gītā view has no
-// Bhāṣyārka-prakāśa / Anubhūtisvarūpa) gets NO svādhyāya link: it would land on a page without the matched text.
-const SV_SECTIONS={'bg-bhashya':new Set(['mula','bhashya','anandagiri'])};
-// Reconstruct a block's verse ref from its int fields (adhyaya.valli.mantra / chapter.verse / verse) —
-// this equals the reading view's id="v-<ref>" anchor. SVADHYAYA_REFIDX (built from the reading HTML) maps
-// that ref → the exact chapter file, so we deep-link to the verse (not the text's front page). A text-
-// fragment (:~:text=) also scrolls-to + highlights the matched span. Falls back to the entry page if the
-// ref can't be resolved (e.g. page-indexed panchadashi-ramkrishna, or an intro block with no mantra).
-function svRef(b){
- // Ānandagiri refs are codes: BR_C02_S01_V20_B07 → 2.1.20, MK_C03_K15 → '3.15 · kārikā', *_I## (an intro) → chapter only
- if(b.t.startsWith('anandagiri-')){
-  const m=String(b.c.ref||'').match(/_C(\d+)(?:_S(\d+))?(?:_([VvK])(\d+))?/); if(!m)return null;
-  const p=[+m[1]]; if(m[2])p.push(+m[2]); if(m[4])p.push(+m[4]);
-  return p.join('.')+(m[3]==='K'?' · kārikā':'');
- }
- if(b.c.sv)return b.c.sv;   // a precomputed reading-view anchor (the AS vārttikas: AS numbering ≠ the lane's — build_vartika_index.py; vārtikasāra intro)
- const flds=((IDX.texts[b.t]||{}).fields)||[], parts=[];
- for(const f of flds){
-  if(f.type==='int'&&f.k!=='page'&&b.c[f.k]!=null)parts.push(b.c[f.k]);
-  else if(f.type==='vrange'&&Array.isArray(b.c[f.k])&&b.c[f.k][0]!=null)parts.push(b.c[f.k][0]);   // [45,47] → its first verse (was dropped → chapter page, no #v- anchor)
- }
- return parts.length?parts.join('.'):null;
-}
-// Resolve a ref to its reading-view file: exact anchor if present, else the file of the nearest
-// ref sharing the longest leading prefix (same chapter) — so a bhāṣya-span block still lands on the
-// right chapter page and the text-fragment finds the exact spot.
-function svFile(idx,ref){
- if(idx[ref])return{file:idx[ref],exact:true};
- for(const k in idx){if(k.startsWith(ref+'.'))return{file:idx[k],exact:false};}   // ref shorter than anchors (e.g. khaṇḍa only) → first verse under it
- const p=ref.split('.');
- for(let n=p.length-1;n>=1;n--){const pre=p.slice(0,n).join('.')+'.';for(const k in idx){if(k.startsWith(pre))return{file:idx[k],exact:false};}}  // ref longer/diverging → nearest same-chapter
- return null;
-}
+// text → reading-view map, verse-ref + anchor resolution, commentary lanes: lib/sv-links.js — ONE copy, shared with the
+// in-text search on every reading page (vv-insearch.js), so the two can never disagree (2026-10-13).
+const {SVADHYAYA,SV_SIDE,SV_SECTION_SIDE}=SVLinks;
+function svRef(b){return SVLinks.svRef(b,IDX.texts);}
+const svFile=SVLinks.svFile;
 // The reader's last-used reading site (vv-store.js lastSite): a visitor of the PUBLIC स्वाध्याय-दीपिका is linked back to
 // it, not to the academy; everyone else keeps the academy base.
 // The site the reader CAME FROM (document.referrer) wins — a stored lastSite can be stale (another tab, an old visit).
@@ -202,17 +158,19 @@ const SV_BASE=(()=>{
 })();
 function svBase(){return SV_BASE;}
 function svadhyayaLink(b,matchedText){
- const o=SVADHYAYA[b.t]; if(!o)return null;
- if(SV_SECTIONS[b.t]&&!SV_SECTIONS[b.t].has(b.c.section))return null;
+ const o=SVLinks.outOf(b); if(!o)return null;            // no reading view, or a section the view doesn't carry
  const ref=svRef(b); if(ref==null)return null;            // page-indexed → can't pinpoint a verse; no front-page link
  const hit=svFile((window.SVADHYAYA_REFIDX||{})[o]||{},ref); if(!hit)return null;
+ const aref=hit.ref||ref;                                  // the anchor actually used (Māṇḍūkya '3.2' → '3.2 · kārikā')
  // ?hl=<term> → the reading view's own highlighter (sync.js) reveals the सन्धि layer + highlights the match
  // (robust to सन्धि/पद layer + saved mode, unlike a browser :~:text= fragment); #v-<ref> scrolls to the verse.
  let url=`${svBase()}${hit.file}`;
  if(matchedText)url+=`?hl=${encodeURIComponent(matchedText.trim())}`;
  const side=SV_SIDE[b.t]||(SV_SECTION_SIDE[b.t]||{})[b.c.section];
  if(matchedText&&side)url+=`&side=${side}`+(b.c.tk?`&vk=${encodeURIComponent(b.c.tk)}`:'');
- if(hit.exact)url+=`#v-${encodeURIComponent(ref)}`;
+ if(matchedText&&SVLinks.layerOf(b)!=='मूलम्')url+='&vw=1';   // commentary hit: the page reveals the commentary if the reader is in mūla-only mode
+ if(hit.exact)url+=`#v-${encodeURIComponent(aref)}`;
+ else if(hit.chap)url+=`${matchedText?'&':'?'}vn=${encodeURIComponent(hit.near)}#v-intro`;   // chapter-level block: the page's intro section, else the first verse — never page-wide
  return url;
 }
 function blockCategory(b){
