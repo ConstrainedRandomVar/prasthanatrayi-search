@@ -61,14 +61,19 @@
    <div id="qwrap"><input id="q" placeholder="search…  e.g.  devaH  or  देवः  or  saMskriya" autofocus autocomplete="off"><div id="hist" role="listbox"></div></div>
    <button onclick="run(true)" style="font-size:16px;padding:9px 16px">Search</button>
    <div class="f"><label>Text</label><select id="text"></select></div>
-   <div class="f"><label>Category</label><select id="category">
+   <div class="f"><label>Texts</label><select id="group" title="prasthāna-trayī = the Upaniṣads, the Bhagavad Gītā and the Brahma-sūtras with Śaṅkara’s bhāṣya and the commentaries on it (Ānandagiri, the vārttikas, Bhāṣyārka-prakāśa, Nyāyanirṇaya …)">
       <option value="">all texts</option>
-      <option value="mula">mūlam only</option>
-      <option value="bhashya">bhāṣyam only</option>
-      <option value="tika">ṭīkās</option>
+      <option value="prasthana">prasthāna-trayī (with Śaṅkara-bhāṣya)</option>
       <option value="prakarana">prakaraṇas</option>
       <option value="vartika">vārtikas</option>
+      <option value="other-bhashya">other Gītā bhāṣyas</option>
       <option value="nibandha">monographs</option></select></div>
+   <div class="f"><label>Layer</label><select id="category">
+      <option value="">all layers</option>
+      <option value="mula">mūlam only</option>
+      <option value="bhashya">bhāṣyam only</option>
+      <option value="mula-bhashya">mūlam + bhāṣyam</option>
+      <option value="tika">ṭīkās</option></select></div>
    <div class="f"><label>Match</label><select id="mode">
       <option value="sandhi" selected>sandhi-tolerant (high-recall)</option>
       <option value="cooccur">words in same sentence</option>
@@ -81,7 +86,7 @@
 <div id="status">loading…</div>
 <div id="results"></div>
 
-<script src="index_manifest.5f736a62c7.js"></script>
+<script src="index_manifest.f279debf47.js"></script>
 <script src="svadhyaya-refidx.3d5874e435.js"></script>
 <script src="lib/sanskrit-search.js"></script>
 <script src="lib/sv-links.js"></script>
@@ -111,19 +116,19 @@ function buildFilters(){const t=curText(),cont=document.getElementById('filters'
  cont.querySelectorAll('[data-k]').forEach(el=>el.addEventListener('change',run));}
 textSel.onchange=()=>{buildFilters();run();};
 document.getElementById('category').onchange=run;
+document.getElementById('group').onchange=run;
 document.getElementById('mode').onchange=run;
 document.getElementById('showPossible').onchange=run;
 document.getElementById('q').addEventListener('input',e=>{document.getElementById('prev').textContent=SS.toDeva(e.target.value);});
 document.getElementById('q').addEventListener('keydown',onQKey);
-// Corpus-wide category filter, orthogonal to the per-text "Text" dropdown (which exposes each
-// text's OWN section field, e.g. mula/bhashya/intro, only once that one text is selected). "tika"
-// groups the 12 anandagiri-* texts, bg-bhashya's own (older, PDF-sourced) anandagiri section (same
-// underlying work, two independent digitizations), and the three Gita-Supersite-sourced BG
-// commentaries (Madhusūdana/Śrīdhara/Nīlakaṇṭha — full independent ṭīkā works, same category as
-// Ānandagirī's). "prakarana" matches the site's own grouping (whole-text, not split by internal
-// mula/bhashya — Hastāmalakīya has both but is grouped here as one unit, same as advaitasharada's
-// own display/prakarana/ URL section). Vārtika texts (no section field at all, and a distinct genre
-// from ṭīkā) and BG's anubhuti section have no bucket — only visible under "all texts" (bhashyarka → ṭīkā since 2026-10-14).
+// Two corpus-wide filters, orthogonal to the per-text "Text" dropdown (which exposes each text's OWN section field once that
+// one text is selected) — split 2026-10-17 (Harsha), they were one "Category" list mixing both questions:
+//   Texts (#group): prasthāna-trayī (with Śaṅkara-bhāṣya — PRASTHANA_TEXTS + every anandagiri-*) · prakaraṇas · vārtikas ·
+//                   other Gītā bhāṣyas (Madhusūdana/Śrīdhara/Nīlakaṇṭha) · monographs
+//   Layer (#category, URL `cat`): mūlam · bhāṣyam · mūlam + bhāṣyam · ṭīkās. "ṭīkās" = the anandagiri-* texts, bg-bhashya's
+//                   Ānandagiri / Bhāṣyārka-prakāśa / Anubhūtisvarūpa sections, the self-hosted ṭīkās; the three Gītā-supersite
+//                   commentaries comment on the Gītā itself → bhāṣyam. Vārtika texts and monographs have no layer (all layers only).
+// "prakarana" matches the site's own grouping (whole-text; its layers also count under Layer, see blockCats).
 const TIKA_PREFIX='anandagiri-';
 const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedantasiddhantasarasangraha','vivekacudamani','panchadashi-ramkrishna','dakshinamurti-stotra','siddhantabindu','naishkarmyasiddhi','vicharasagara','anubhutiprakasha','upadeshasahasri','vedantasara','advaita-makaranda','atmabodha','upadesha-saram','saddarshanam']);
 // Vārtika-genre works (verse expositions of a bhāṣya). Previously bucketless ("only under all
@@ -133,6 +138,12 @@ const VARTIKA_TEXTS=new Set(['brihad-vartika','taittiriya-vartika','brihadaranya
 // commentaries self-hosted from our reading views (2026-10-06): Ānandagiri's Śāstraprakāśikā on the Bṛhad vārttika and
 // Bhāratītīrtha's Vaiyāsika-nyāya-mālā on the Brahmasūtra → the "ṭīkās" bucket.
 const SELF_TIKA_TEXTS=new Set(['brihad-vartika-tika','vaiyasika-nyayamala','nyayanirnaya']);
+// प्रस्थानत्रयी (Harsha 2026-10-17): the Upaniṣads, the Gītā and the Brahma-sūtras WITH ŚAṄKARA'S BHĀṢYA and the commentaries on
+// it — every anandagiri-* text, the vārttikas (+ vārtikasāra, Śāstraprakāśikā), Nyāyanirṇaya, the Vaiyāsika-nyāya-mālā; bg-bhashya
+// carries the Gītā mūla + Bhāṣyārka-prakāśa + Anubhūtisvarūpa. NOT Madhusūdana/Śrīdhara/Nīlakaṇṭha (→ "other Gītā bhāṣyas").
+const PRASTHANA_TEXTS=new Set(['isha-bhashya','kena-pada-bhashya','kena-vakya-bhashya','katha-bhashya','prashna-bhashya','mundaka-bhashya',
+ 'mandukya-bhashya','taittiriya-bhashya','aitareya-bhashya','chandogya-bhashya','brihad-bhashya','bg-bhashya','brahmasutra-bhashya',
+ 'brihad-vartika','taittiriya-vartika','brihadaranyaka-vartika-sara','brihad-vartika-tika','nyayanirnaya','vaiyasika-nyayamala']);
 // Monographs (निबन्धाः, the svādhyāya group of the same name): modern studies whose Sanskrit quotations are indexed.
 const NIBANDHA_TEXTS=new Set(['vrk-gita-upanishads']);
 // svādhyāya cross-link: search text-id → the academy reading-view page ("<out>.html"). A result for one of
@@ -147,7 +158,7 @@ const SVADHYAYA_BASE='https://constrainedrandomvar.github.io/vedantic-vyakarana-
 const {SVADHYAYA,SV_SIDE,SV_SECTION_SIDE}=SVLinks;
 function svRef(b){return SVLinks.svRef(b,IDX.texts);}
 const svFile=SVLinks.svFile;
-// The reader's last-used reading site (vv-store.js lastSite): a visitor of the PUBLIC स्वाध्याय-सहकारी is linked back to
+// The reader's last-used reading site (vv-store.js lastSite): a visitor of the PUBLIC अध्ययन-सहकारी is linked back to
 // it, not to the academy; everyone else keeps the academy base.
 // The site the reader CAME FROM (document.referrer) wins — a stored lastSite can be stale (another tab, an old visit).
 // Only the academy and the public site carry these reading views (the sister site doesn't) → anything else = academy.
@@ -176,12 +187,12 @@ function svadhyayaLink(b,matchedText){
 function blockCategory(b){
  if(b.t==='panchadashi-modak-tika'||SELF_TIKA_TEXTS.has(b.t))return 'tika';
  if(b.t.startsWith(TIKA_PREFIX))return 'tika';
- if(GITA_SUPERSITE_TEXTS.has(b.t))return 'tika';
+ if(GITA_SUPERSITE_TEXTS.has(b.t))return 'bhashya';   // Madhusūdana/Śrīdhara/Nīlakaṇṭha comment on the Gītā itself (Harsha 2026-10-17)
  if(PRAKARANA_TEXTS.has(b.t))return 'prakarana';
  if(VARTIKA_TEXTS.has(b.t))return 'vartika';
  if(NIBANDHA_TEXTS.has(b.t))return 'nibandha';
  if(b.t==='bg-bhashya'){
-   if(b.c.section==='anandagiri'||b.c.section==='bhashyarka')return 'tika';   // Bhāṣyārka-prakāśa (Rāmarāya-kavi) = a ṭīkā on the bhāṣya
+   if(b.c.section==='anandagiri'||b.c.section==='bhashyarka'||b.c.section==='anubhuti')return 'tika';   // Bhāṣyārka-prakāśa (Rāmarāya-kavi), Anubhūtisvarūpa's ṭippaṇa = ṭīkās on the bhāṣya
    if(b.c.section==='mula')return 'mula';
    if(b.c.section==='bhashya')return 'bhashya';
    return null;
@@ -197,6 +208,8 @@ function blockCategory(b){
 // "bhāṣyam only" / "ṭīkās" / "mūlam only" also find the prakaraṇa layers, not just the upaniṣad/Gītā ones.
 function blockCats(b){
  const out=new Set(); const c=blockCategory(b); if(c)out.add(c);
+ if(PRASTHANA_TEXTS.has(b.t)||b.t.startsWith(TIKA_PREFIX))out.add('prasthana');
+ if(GITA_SUPERSITE_TEXTS.has(b.t))out.add('other-bhashya');
  if(PRAKARANA_TEXTS.has(b.t)||b.t==='panchadashi-modak-tika'){
    out.add('prakarana'); const sec=b.c.section;
    if(sec==='mula')out.add('mula');
@@ -210,8 +223,10 @@ function blockCats(b){
 // under a chosen text (e.g. Vivekacūḍāmaṇi → Mūla / Vyākhyā).
 function fieldLabel(f){return f.k==='section'?'Layer':f.label;}
 function passFilters(b){if(textSel.value&&b.t!==textSel.value)return false;
- const catSel=document.getElementById('category').value;
- if(catSel&&!blockCats(b).has(catSel))return false;
+ const catSel=document.getElementById('category').value,grpSel=document.getElementById('group').value;
+ if(catSel||grpSel){const cs=blockCats(b);
+   if(catSel==='mula-bhashya'?!(cs.has('mula')||cs.has('bhashya')):(catSel&&!cs.has(catSel)))return false;
+   if(grpSel&&!cs.has(grpSel))return false;}
  const t=IDX.texts[b.t];if(!t)return true;
  for(const el of document.querySelectorAll('#filters [data-k]')){const val=el.value.trim();if(!val)continue;
    const k=el.dataset.k,f=t.fields.find(x=>x.k===k),cv=b.c[k];
@@ -562,41 +577,47 @@ function run(explicit){   // explicit: true = Enter/button/history pick; 'rerun'
  res.innerHTML=html;}
 
 // ===================== URL state · search history (#4) · ☆ bookmarks (#7) — 2026-10-11 =====================
-// URL: ?q=…&t=<text>&cat=<category>&mode=<mode>&np=1 (possible matches off)&f.<field>=<value> — a search is a
+// URL: ?q=…&t=<text>&g=<texts group>&cat=<layer>&mode=<mode>&np=1 (possible matches off)&f.<field>=<value> — a search is a
 // shareable/bookmarkable link; on load the page restores it and runs. History + bookmarks live in vv-store.js
 // (this browser only; shared with every same-origin site, so the academy's ★ library sees them).
-const CAT_LABEL={mula:'mūlam',bhashya:'bhāṣyam',tika:'ṭīkās',prakarana:'prakaraṇas',vartika:'vārtikas',nibandha:'monographs'};
+const CAT_LABEL={mula:'mūlam',bhashya:'bhāṣyam','mula-bhashya':'mūlam + bhāṣyam',tika:'ṭīkās'};
+const GRP_LABEL={prasthana:'prasthāna-trayī',prakarana:'prakaraṇas',vartika:'vārtikas','other-bhashya':'other Gītā bhāṣyas',nibandha:'monographs'};
 const MODE_LABEL={cooccur:'same sentence',exact:'exact'};
 function getState(){
  const f={};document.querySelectorAll('#filters [data-k]').forEach(el=>{if(el.value!=='')f[el.dataset.k]=el.value;});
  const st={q:document.getElementById('q').value.trim()};
  if(textSel.value)st.t=textSel.value;
  const cat=document.getElementById('category').value;if(cat)st.cat=cat;
+ const g=document.getElementById('group').value;if(g)st.g=g;
  const mode=document.getElementById('mode').value;if(mode!=='sandhi')st.mode=mode;
  if(!document.getElementById('showPossible').checked)st.np=1;
  if(Object.keys(f).length)st.f=f;
  return st;
 }
 function stateToParams(st){
- const p=new URLSearchParams();if(st.q)p.set('q',st.q);if(st.t)p.set('t',st.t);if(st.cat)p.set('cat',st.cat);if(st.mode)p.set('mode',st.mode);if(st.np)p.set('np','1');
+ const p=new URLSearchParams();if(st.q)p.set('q',st.q);if(st.t)p.set('t',st.t);if(st.g)p.set('g',st.g);if(st.cat)p.set('cat',st.cat);if(st.mode)p.set('mode',st.mode);if(st.np)p.set('np','1');
  for(const k in(st.f||{}))p.set('f.'+k,st.f[k]);return p;
 }
 function paramsToState(p){
- const st={q:p.get('q')||''};if(p.get('t'))st.t=p.get('t');if(p.get('cat'))st.cat=p.get('cat');if(p.get('mode'))st.mode=p.get('mode');if(p.get('np'))st.np=1;
+ const st={q:p.get('q')||''};if(p.get('t'))st.t=p.get('t');if(p.get('g'))st.g=p.get('g');if(p.get('cat'))st.cat=p.get('cat');
+ if(GRP_LABEL[st.cat]&&!st.g){st.g=st.cat;delete st.cat;}   // links from before the Texts/Layer split (2026-10-17): ?cat=prakarana → ?g=prakarana
+ if(p.get('mode'))st.mode=p.get('mode');if(p.get('np'))st.np=1;
  const f={};for(const[k,v]of p.entries())if(k.startsWith('f.'))f[k.slice(2)]=v;if(Object.keys(f).length)st.f=f;return st;
 }
 function applyState(st){   // set every control from a state; does NOT run
+ if(GRP_LABEL[st.cat]&&!st.g){st={...st,g:st.cat};delete st.cat;}   // saved history from before the Texts/Layer split
  const q=document.getElementById('q');q.value=st.q||'';document.getElementById('prev').textContent=SS.toDeva(q.value);
  textSel.value=(st.t&&IDX.texts[st.t])?st.t:'';buildFilters();
  for(const k in(st.f||{})){const el=document.querySelector(`#filters [data-k="${CSS.escape(k)}"]`);if(el)el.value=st.f[k];}
  const cat=document.getElementById('category');cat.value=st.cat&&cat.querySelector(`option[value="${CSS.escape(st.cat)}"]`)?st.cat:'';
+ const grp=document.getElementById('group');grp.value=st.g&&grp.querySelector(`option[value="${CSS.escape(st.g)}"]`)?st.g:'';
  const mode=document.getElementById('mode');mode.value=st.mode&&mode.querySelector(`option[value="${CSS.escape(st.mode)}"]`)?st.mode:'sandhi';
  document.getElementById('showPossible').checked=!st.np;
 }
 function searchUrl(){const p=stateToParams(getState()).toString();return location.href.split(/[?#]/)[0]+(p?'?'+p:'');}
 function saveUrlState(raw){try{history.replaceState(null,'',raw?searchUrl():location.pathname);}catch(e){}}
 function stateLabel(st){   // compact human label of the filters, e.g. "Kena-bhāṣya · ṭīkās · exact"
- const bits=[];if(st.t)bits.push((IDX.texts[st.t]||{}).title||st.t);if(st.cat)bits.push(CAT_LABEL[st.cat]||st.cat);if(st.mode)bits.push(MODE_LABEL[st.mode]||st.mode);
+ const bits=[];if(st.t)bits.push((IDX.texts[st.t]||{}).title||st.t);if(st.g)bits.push(GRP_LABEL[st.g]||st.g);if(st.cat)bits.push(CAT_LABEL[st.cat]||st.cat);if(st.mode)bits.push(MODE_LABEL[st.mode]||st.mode);
  for(const k in(st.f||{}))bits.push(k+'='+st.f[k]);if(st.np)bits.push('no possible');return bits.join(' · ');
 }
 // history: an explicit search (Enter / button / history pick) is recorded at once; a filter change is recorded once the
