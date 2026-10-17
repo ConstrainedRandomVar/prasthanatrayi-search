@@ -66,7 +66,7 @@
       <option value="prasthana">prasthāna-trayī (with Śaṅkara-bhāṣya)</option>
       <option value="prakarana">prakaraṇas</option>
       <option value="vartika">vārtikas</option>
-      <option value="other-bhashya">other Gītā bhāṣyas</option>
+      <option value="other-bhashya" title="commentaries other than Śaṅkara’s bhāṣya — today: Madhusūdana · Śrīdhara · Nīlakaṇṭha on the Gītā">other bhāṣyas</option>
       <option value="nibandha">monographs</option></select></div>
    <div class="f"><label>Layer</label><select id="category">
       <option value="">all layers</option>
@@ -102,7 +102,7 @@ const SS=window.SanskritSearch;
 // From file:// (no fetch) it falls back to the single index_data.js bundle.
 const MANI=window.SEARCH_MANIFEST||{texts:{},shards:[]};
 const IDX={texts:Object.assign({},MANI.texts),blocks:[]}, B=IDX.blocks;
-function norm(b){if(b._n===undefined){b._n=SS.normalize(b.s);b._nc=SS.normalize(b.s,true);}return b;}
+function norm(b){if(b._n===undefined){b._n=SS.normalize(b.s);b._nc=b._n.replace(/ /g,'');}return b;}   // _nc ≡ _n minus spaces — derive, don't normalize twice (perf 2026-10-17)
 const textSel=document.getElementById('text');
 textSel.innerHTML='<option value="">All texts</option>'+
  Object.entries(IDX.texts).map(([id,t])=>`<option value="${id}">${t.title}</option>`).join('');
@@ -124,7 +124,7 @@ document.getElementById('q').addEventListener('keydown',onQKey);
 // Two corpus-wide filters, orthogonal to the per-text "Text" dropdown (which exposes each text's OWN section field once that
 // one text is selected) — split 2026-10-17 (Harsha), they were one "Category" list mixing both questions:
 //   Texts (#group): prasthāna-trayī (with Śaṅkara-bhāṣya — PRASTHANA_TEXTS + every anandagiri-*) · prakaraṇas · vārtikas ·
-//                   other Gītā bhāṣyas (Madhusūdana/Śrīdhara/Nīlakaṇṭha) · monographs
+//                   other bhāṣyas (today Madhusūdana/Śrīdhara/Nīlakaṇṭha on the Gītā) · monographs
 //   Layer (#category, URL `cat`): mūlam · bhāṣyam · mūlam + bhāṣyam · ṭīkās. "ṭīkās" = the anandagiri-* texts, bg-bhashya's
 //                   Ānandagiri / Bhāṣyārka-prakāśa / Anubhūtisvarūpa sections, the self-hosted ṭīkās; the three Gītā-supersite
 //                   commentaries comment on the Gītā itself → bhāṣyam. Vārtika texts and monographs have no layer (all layers only).
@@ -140,7 +140,7 @@ const VARTIKA_TEXTS=new Set(['brihad-vartika','taittiriya-vartika','brihadaranya
 const SELF_TIKA_TEXTS=new Set(['brihad-vartika-tika','vaiyasika-nyayamala','nyayanirnaya']);
 // प्रस्थानत्रयी (Harsha 2026-10-17): the Upaniṣads, the Gītā and the Brahma-sūtras WITH ŚAṄKARA'S BHĀṢYA and the commentaries on
 // it — every anandagiri-* text, the vārttikas (+ vārtikasāra, Śāstraprakāśikā), Nyāyanirṇaya, the Vaiyāsika-nyāya-mālā; bg-bhashya
-// carries the Gītā mūla + Bhāṣyārka-prakāśa + Anubhūtisvarūpa. NOT Madhusūdana/Śrīdhara/Nīlakaṇṭha (→ "other Gītā bhāṣyas").
+// carries the Gītā mūla + Bhāṣyārka-prakāśa + Anubhūtisvarūpa. NOT Madhusūdana/Śrīdhara/Nīlakaṇṭha (→ "other bhāṣyas").
 const PRASTHANA_TEXTS=new Set(['isha-bhashya','kena-pada-bhashya','kena-vakya-bhashya','katha-bhashya','prashna-bhashya','mundaka-bhashya',
  'mandukya-bhashya','taittiriya-bhashya','aitareya-bhashya','chandogya-bhashya','brihad-bhashya','bg-bhashya','brahmasutra-bhashya',
  'brihad-vartika','taittiriya-vartika','brihadaranyaka-vartika-sara','brihad-vartika-tika','nyayanirnaya','vaiyasika-nyayamala']);
@@ -533,7 +533,7 @@ function renderHit(b,possible,useEx){
  if(window.VVStore){
   const ref=svRef(b), title=((IDX.texts[b.t]||{}).title||b.t)+(ref!=null?' '+ref:''), plain=rawSnip.split(SS.M1).join('').split(SS.M2).join('').trim();
   const rec={url:svU||(src&&src.url)||searchUrl(),title,ref:ref!=null?String(ref):'',excerpt:plain.length>300?plain.slice(0,300)+'…':plain,src:'search',query:document.getElementById('q').value.trim()};
-  const i=HITS.push(rec)-1, on=!!VVStore.bookmarks.find(rec.url,rec.excerpt);
+  const i=HITS.push(rec)-1, on=BMSET?BMSET.has(bmKey(rec.url,rec.excerpt)):!!VVStore.bookmarks.find(rec.url,rec.excerpt);
   star=`<button class="star${on?' on':''}" data-i="${i}" title="${on?'bookmarked — click to file in a collection or remove':'bookmark this passage (★ My library)'}">${on?'★':'☆'}</button>`;
  }
  return `<div class="hit${possible?' possible':''}"><div class="meta">${star} ${locStr(b)} ${badge} ${cp} ${scanA} ${asA} ${svA}</div><div class="snip">${snip}</div></div>`;
@@ -569,19 +569,25 @@ function run(explicit){   // explicit: true = Enter/button/history pick; 'rerun'
    (possibleHits.length?`  (${preciseHits.length} precise + ${possibleHits.length} possible)`:'')+
    (mode==='sandhi'?`  (stems: ${ex.stems.join(' + ')})`:'')+(total>1000?' (first 1000)':'')+
    (LOAD.ready?'':`  — index still loading (${LOAD.pct()}%), results will update…`);
+ BMSET=bmSet();   // read the bookmark store ONCE per search, not once per rendered hit (perf 2026-10-17: +230 ms/search at 500 bookmarks)
  let html=preciseHits.map(b=>renderHit(b,false,ex)).join('');
  if(possibleHits.length){
    html+=`<div class="section-div">possible matches (${possibleHits.length}) — sandhi-fusion guesses, not confirmed</div>`;
    html+=possibleHits.map(b=>renderHit(b,true,exWide)).join('');
  }
+ BMSET=null;
  res.innerHTML=html;}
+// same identity rule as VVStore.bookmarks.find: absolute url + excerpt
+let BMSET=null;
+function bmKey(url,excerpt){let u=url;try{u=new URL(url,location.href).href;}catch(e){}return u+'\u0000'+(excerpt||'');}
+function bmSet(){if(!window.VVStore)return null;try{return new Set(VVStore.bookmarks.list().map(b=>bmKey(b.url,b.excerpt)));}catch(e){return null;}}
 
 // ===================== URL state · search history (#4) · ☆ bookmarks (#7) — 2026-10-11 =====================
 // URL: ?q=…&t=<text>&g=<texts group>&cat=<layer>&mode=<mode>&np=1 (possible matches off)&f.<field>=<value> — a search is a
 // shareable/bookmarkable link; on load the page restores it and runs. History + bookmarks live in vv-store.js
 // (this browser only; shared with every same-origin site, so the academy's ★ library sees them).
 const CAT_LABEL={mula:'mūlam',bhashya:'bhāṣyam','mula-bhashya':'mūlam + bhāṣyam',tika:'ṭīkās'};
-const GRP_LABEL={prasthana:'prasthāna-trayī',prakarana:'prakaraṇas',vartika:'vārtikas','other-bhashya':'other Gītā bhāṣyas',nibandha:'monographs'};
+const GRP_LABEL={prasthana:'prasthāna-trayī',prakarana:'prakaraṇas',vartika:'vārtikas','other-bhashya':'other bhāṣyas',nibandha:'monographs'};
 const MODE_LABEL={cooccur:'same sentence',exact:'exact'};
 function getState(){
  const f={};document.querySelectorAll('#filters [data-k]').forEach(el=>{if(el.value!=='')f[el.dataset.k]=el.value;});
