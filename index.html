@@ -91,7 +91,7 @@
 <div id="status">loading…</div>
 <div id="results"></div>
 
-<script src="index_manifest.130265fc59.js"></script>
+<script src="index_manifest.8787673317.js"></script>
 <script src="svadhyaya-refidx.3d5874e435.js"></script>
 <script src="lib/sanskrit-search.js"></script>
 <script src="lib/sv-links.js"></script>
@@ -144,7 +144,7 @@ const PRAKARANA_TEXTS=new Set(['hastamalakiya-bhashya','shatashloki','sarvavedan
 const VARTIKA_TEXTS=new Set(['brihad-vartika','taittiriya-vartika','brihadaranyaka-vartika-sara']);
 // commentaries self-hosted from our reading views (2026-10-06): Ānandagiri's Śāstraprakāśikā on the Bṛhad vārttika and
 // Bhāratītīrtha's Vaiyāsika-nyāya-mālā on the Brahmasūtra → the "ṭīkās" bucket.
-const SELF_TIKA_TEXTS=new Set(['brihad-vartika-tika','vaiyasika-nyayamala','nyayanirnaya']);
+const SELF_TIKA_TEXTS=new Set(['brihad-vartika-tika','vaiyasika-nyayamala','nyayanirnaya','dhanapati-gita']);   // dhanapati-gita: Bhāṣyotkarṣadīpikā = a ṭīkā on Śaṅkara's Gītā-bhāṣya (2026-10-21)
 // प्रस्थानत्रयी (Harsha 2026-10-17): the Upaniṣads, the Gītā and the Brahma-sūtras WITH ŚAṄKARA'S BHĀṢYA and the commentaries on
 // it — every anandagiri-* text, the vārttikas (+ vārtikasāra, Śāstraprakāśikā), Nyāyanirṇaya, the Vaiyāsika-nyāya-mālā; bg-bhashya
 // carries the Gītā mūla + Bhāṣyārka-prakāśa + Anubhūtisvarūpa. NOT Madhusūdana/Śrīdhara/Nīlakaṇṭha (→ "other bhāṣyas").
@@ -216,7 +216,7 @@ function blockCategory(b){
 // "bhāṣyam only" / "ṭīkās" / "mūlam only" also find the prakaraṇa layers, not just the upaniṣad/Gītā ones.
 function blockCats(b){
  const out=new Set(); const c=blockCategory(b); if(c)out.add(c);
- if(PRASTHANA_TEXTS.has(b.t)||b.t.startsWith(TIKA_PREFIX))out.add('prasthana');
+ if(PRASTHANA_TEXTS.has(b.t)||b.t.startsWith(TIKA_PREFIX)||b.t==='dhanapati-gita')out.add('prasthana');   // a ṭīkā on Śaṅkara (like Ānandagiri), not an 'other bhāṣya'
  if(GITA_SUPERSITE_TEXTS.has(b.t))out.add('other-bhashya');
  if(PRAKARANA_TEXTS.has(b.t)||b.t==='panchadashi-modak-tika'){
    out.add('prakarana'); const sec=b.c.section;
@@ -446,8 +446,9 @@ function advaitasharadaLink(b,matchedText){
 // commentary tab (confirmed 2026-08-11 by reading its JS bundle: no URL param selects one), so the
 // label says which tab to click rather than implying it'll land pre-selected.
 const GITA_SUPERSITE_TEXTS=new Map([['madhusudani-gita','Madhusūdana'],['sridhari-gita','Śrīdhara'],['nilakanthi-gita','Nīlakaṇṭha']]);
+const GITA_SS_LINK=new Map([...GITA_SUPERSITE_TEXTS,['dhanapati-gita','Dhanapati']]);   // texts whose source page is on the Supersite
 function gitaSupersiteLink(b){
- if(!GITA_SUPERSITE_TEXTS.has(b.t))return null;
+ if(!GITA_SS_LINK.has(b.t))return null;
  const ss=String(b.c.ss||(b.c.chapter+'.'+b.c.verse)).split('.');   // ss = the Supersite's OWN verse number (its ch1/ch13 differ from ours)
  return `https://www.gitasupersite.in/read/srimad/${ss[0]}/${ss[1]}`;
 }
@@ -513,7 +514,7 @@ function selfHostedScanLink(b){
 // wins; it fills the gap for texts/sections that have none.
 function sourceLink(b,matchedText){
  const gs=gitaSupersiteLink(b);
- if(gs)return{url:gs,label:`gitasupersite (select ${GITA_SUPERSITE_TEXTS.get(b.t)} tab)`};
+ if(gs)return{url:gs,label:`gitasupersite (select ${GITA_SS_LINK.get(b.t)} tab)`};
  const as=advaitasharadaLink(b,matchedText);
  if(as)return{url:as,label:'advaitaśārada'};
  const sh=selfHostedLink(b,matchedText);
