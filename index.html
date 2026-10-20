@@ -28,6 +28,10 @@
  .section-div{margin:18px 18px 6px;padding-top:10px;border-top:1px dashed #e0d3a8;font-size:13px;color:#b45309;font-weight:600}
  header{display:flex;align-items:center;gap:12px}
  header h1{flex:1}
+ .vvbrand{display:inline-flex;align-items:center;gap:5px;color:#f5b544;font-weight:800;font-size:16px;text-decoration:none;font-family:'Noto Serif Devanagari',serif;white-space:nowrap}
+ .vvbrand:hover .bt{text-decoration:underline;text-underline-offset:3px} .vvbrand img{height:22px;width:auto}
+ .vvbrand .bs{display:none} @media(max-width:640px){.vvbrand .bf{display:none}.vvbrand .bs{display:inline}}
+ a.svadhyaya img{height:15px;width:auto;vertical-align:-3px;margin-right:3px} a.svadhyaya .bs{display:none} @media(max-width:640px){a.svadhyaya .bf{display:none}a.svadhyaya .bs{display:inline}}
  .lib{color:#fde68a;text-decoration:none;font-size:14px;border:1px solid rgba(253,230,138,.45);border-radius:6px;padding:3px 10px;white-space:nowrap}
  .lib:hover{background:rgba(253,230,138,.12)}
  /* search history dropdown (#4) — personal, stored only in this browser (vv-store.js) */
@@ -55,7 +59,7 @@
  .colpop .cfoot{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
  .colpop .crm{color:#b91c1c;cursor:pointer;font-size:12px}
 </style></head><body>
-<header><h1>Sanskrit Search <small>— ITRANS or Devanāgarī; orthography-, space- & sandhi-tolerant</small></h1><a class="lib" id="libLink" href="https://constrainedrandomvar.github.io/vedantic-vyakarana-academy/library.html" target="_blank" rel="noopener" title="your bookmarks, collections and notes (kept in this browser only)">★ My library</a></header>
+<header><a class="vvbrand" id="vvBrand" href="#" data-vv-brand title="अध्ययन-सहकारी — Home"><span class="bt bf">अध्ययन-सहकारी</span><span class="bt bs">अध्य·सहकारी</span><img id="vvBrandLogo" alt="" aria-hidden="true"></a><h1>Sanskrit Search <small>— ITRANS or Devanāgarī; orthography-, space- & sandhi-tolerant</small></h1><a class="lib" id="libLink" href="https://constrainedrandomvar.github.io/vedantic-vyakarana-academy/library.html" target="_blank" rel="noopener" title="your bookmarks, collections and notes (kept in this browser only)">★ My library</a></header>
 <div class="bar">
  <div class="row">
    <div id="qwrap"><input id="q" placeholder="search…  e.g.  devaH  or  देवः  or  saMskriya" autofocus autocomplete="off"><div id="hist" role="listbox"></div></div>
@@ -67,7 +71,7 @@
       <option value="prakarana">prakaraṇas</option>
       <option value="vartika">vārtikas</option>
       <option value="other-bhashya" title="commentaries other than Śaṅkara’s bhāṣya — today: Madhusūdana · Śrīdhara · Nīlakaṇṭha on the Gītā">other bhāṣyas</option>
-      <option value="nibandha">monographs</option></select></div>
+      <option value="nibandha">in-depth studies</option></select></div>
    <div class="f"><label>Layer</label><select id="category">
       <option value="">all layers</option>
       <option value="mula">mūlam only</option>
@@ -79,6 +83,7 @@
       <option value="cooccur">words in same sentence</option>
       <option value="exact">exact</option></select></div>
    <label class="toggle"><input type="checkbox" id="showPossible" checked> show possible matches</label>
+   <label class="toggle" title="advaitaśārada / gitasupersite links next to ours (off by default)"><input type="checkbox" id="showExt"> include links to other sites</label>
  </div>
  <div id="filters"></div>
  <div class="note">Devanāgarī preview: <span id="prev" style="font-size:17px"></span></div>
@@ -86,7 +91,7 @@
 <div id="status">loading…</div>
 <div id="results"></div>
 
-<script src="index_manifest.2b4a400959.js"></script>
+<script src="index_manifest.130265fc59.js"></script>
 <script src="svadhyaya-refidx.3d5874e435.js"></script>
 <script src="lib/sanskrit-search.js"></script>
 <script src="lib/sv-links.js"></script>
@@ -119,6 +124,8 @@ document.getElementById('category').onchange=run;
 document.getElementById('group').onchange=run;
 document.getElementById('mode').onchange=run;
 document.getElementById('showPossible').onchange=run;
+{ const se=document.getElementById('showExt'); try{ se.checked=localStorage.getItem('vv_search_ext')==='1'; }catch(e){}
+  se.onchange=()=>{ try{ localStorage.setItem('vv_search_ext', se.checked?'1':'0'); }catch(e){} run(); }; }
 document.getElementById('q').addEventListener('input',e=>{document.getElementById('prev').textContent=SS.toDeva(e.target.value);});
 document.getElementById('q').addEventListener('keydown',onQKey);
 // Two corpus-wide filters, orthogonal to the per-text "Text" dropdown (which exposes each text's OWN section field once that
@@ -175,7 +182,8 @@ function svadhyayaLink(b,matchedText){
  const aref=hit.ref||ref;                                  // the anchor actually used (Māṇḍūkya '3.2' → '3.2 · kārikā')
  // ?hl=<term> → the reading view's own highlighter (sync.js) reveals the सन्धि layer + highlights the match
  // (robust to सन्धि/पद layer + saved mode, unlike a browser :~:text= fragment); #v-<ref> scrolls to the verse.
- let url=`${svBase()}${hit.file}`;
+ // the निबन्धाः pages (In-depth studies) are academy-only — prod doesn't carry them (Harsha 2026-10-21 #9; site-profiles exclude)
+ let url=`${/^reading-(prapancha-mithyatva|vrk-gita-upanishads)\.html$/.test(hit.file)?SVADHYAYA_BASE:svBase()}${hit.file}`;
  if(matchedText)url+=`?hl=${encodeURIComponent(matchedText.trim())}`;
  const side=SV_SIDE[b.t]||(SV_SECTION_SIDE[b.t]||{})[b.c.section];
  if(matchedText&&side)url+=`&side=${side}`+(b.c.tk?`&vk=${encodeURIComponent(b.c.tk)}`:'');
@@ -440,7 +448,8 @@ function advaitasharadaLink(b,matchedText){
 const GITA_SUPERSITE_TEXTS=new Map([['madhusudani-gita','Madhusūdana'],['sridhari-gita','Śrīdhara'],['nilakanthi-gita','Nīlakaṇṭha']]);
 function gitaSupersiteLink(b){
  if(!GITA_SUPERSITE_TEXTS.has(b.t))return null;
- return `https://www.gitasupersite.in/read/srimad/${b.c.chapter}/${b.c.verse}`;
+ const ss=String(b.c.ss||(b.c.chapter+'.'+b.c.verse)).split('.');   // ss = the Supersite's OWN verse number (its ch1/ch13 differ from ours)
+ return `https://www.gitasupersite.in/read/srimad/${ss[0]}/${ss[1]}`;
 }
 // Self-hosted scans — texts (or sections) with NO external home on advaitasharada/gitasupersite,
 // whose PDF we host in this repo under texts/<slug>/ and deep-link per page via the browser PDF
@@ -518,25 +527,28 @@ function renderHit(b,possible,useEx){
  const matchedText=(m1i!==-1&&m2i!==-1)?rawSnip.slice(m1i+1,m2i):null;
  const cp=`<span class="copy" onclick="navigator.clipboard.writeText(this.dataset.c);this.textContent='copied ✓'" data-c="${esc(b.s)}">copy text</span>`;
  const svU=svadhyayaLink(b,matchedText);
- // a ग्रन्थाः hit needs no self-hosted read/scan link (the reading view IS the readable text, Harsha 2026-10-12);
- // the external canonical source (advaitaśārada / gitasupersite) stays
- const src=svU?(gitaSupersiteLink(b)||advaitasharadaLink(b,matchedText)?sourceLink(b,matchedText):null):sourceLink(b,matchedText);
- const asA=src?`<a class="advaita" href="${esc(src.url)}" target="_blank" rel="noopener">${src.label} ↗</a>`:'';
- const svA=svU?`<a class="advaita svadhyaya" href="${esc(svU)}" target="_blank" rel="noopener" title="open this passage in the ग्रन्थाः reading view">ग्रन्थाः ↗</a>`:'';
+ // OUR link first (Harsha 2026-10-21 #16): the reading page (🪔 अध्ययन-सहकारी), else our own read/scan viewer for a text with no
+ // reading page yet (also ours — always shown). Other sites (advaitaśārada / gitasupersite) only when "include links to other
+ // sites" is ticked (off by default; their pages can't highlight the hit), and always AFTER ours.
+ const ext=document.getElementById('showExt').checked?(gitaSupersiteLink(b)?{url:gitaSupersiteLink(b),label:`gitasupersite (select ${GITA_SUPERSITE_TEXTS.get(b.t)} tab)`}:(advaitasharadaLink(b,matchedText)?{url:advaitasharadaLink(b,matchedText),label:'advaitaśārada'}:null)):null;
+ const own=svU?null:selfHostedLink(b,matchedText);
+ const src=own?{url:own.url,label:own.label}:null;   // (bookmark fallback below)
+ const svA=svU?`<a class="advaita svadhyaya" href="${esc(svU)}" target="_blank" rel="noopener" title="open this passage in अध्ययन-सहकारी"><img src="${esc(svBase())}diya-40.png" alt="" onerror="this.remove()"><span class="bf">अध्ययन-सहकारी</span><span class="bs">अध्य·सहकारी</span> ↗</a>`:'';
+ const ownA=own?`<a class="advaita" href="${esc(own.url)}" target="_blank" rel="noopener">${own.label} ↗</a>`:'';
  // Secondary original-scan link, shown only when the primary is a readable typeset re-render (so the
  // reader can verify the OCR against the actual page image).
  const scan=svU?null:selfHostedScanLink(b);
- const scanA=(scan&&(!src||src.url!==scan.url))?`<a class="advaita" href="${esc(scan.url)}" target="_blank" rel="noopener">${scan.label} ↗</a>`:'';
+ const scanA=(scan&&(!own||own.url!==scan.url))?`<a class="advaita" href="${esc(scan.url)}" target="_blank" rel="noopener">${scan.label} ↗</a>`:'';
+ const asA=ext?`<a class="advaita" href="${esc(ext.url)}" target="_blank" rel="noopener">${ext.label} ↗</a>`:'';
  const badge=possible?'<span class="possible-badge">possible</span>':'';
- // scan (verify) link first, primary read/source link rightmost (Harsha, 2026-08-18).
  let star='';
  if(window.VVStore){
   const ref=svRef(b), title=((IDX.texts[b.t]||{}).title||b.t)+(ref!=null?' '+ref:''), plain=rawSnip.split(SS.M1).join('').split(SS.M2).join('').trim();
-  const rec={url:svU||(src&&src.url)||searchUrl(),title,ref:ref!=null?String(ref):'',excerpt:plain.length>300?plain.slice(0,300)+'…':plain,src:'search',query:document.getElementById('q').value.trim()};
+  const rec={url:svU||(src&&src.url)||(ext&&ext.url)||searchUrl(),title,ref:ref!=null?String(ref):'',excerpt:plain.length>300?plain.slice(0,300)+'…':plain,src:'search',query:document.getElementById('q').value.trim()};
   const i=HITS.push(rec)-1, on=BMSET?BMSET.has(bmKey(rec.url,rec.excerpt)):!!VVStore.bookmarks.find(rec.url,rec.excerpt);
   star=`<button class="star${on?' on':''}" data-i="${i}" title="${on?'bookmarked — click to file in a collection or remove':'bookmark this passage (★ My library)'}">${on?'★':'☆'}</button>`;
  }
- return `<div class="hit${possible?' possible':''}"><div class="meta">${star} ${locStr(b)} ${badge} ${cp} ${scanA} ${asA} ${svA}</div><div class="snip">${snip}</div></div>`;
+ return `<div class="hit${possible?' possible':''}"><div class="meta">${star} ${locStr(b)} ${badge} ${cp} ${svA}${ownA} ${scanA} ${asA}</div><div class="snip">${snip}</div></div>`;
 }
 function run(explicit){   // explicit: true = Enter/button/history pick; 'rerun' = a shard landed (no history, keep popovers)
  const raw=document.getElementById('q').value.trim(),res=document.getElementById('results');
@@ -587,7 +599,7 @@ function bmSet(){if(!window.VVStore)return null;try{return new Set(VVStore.bookm
 // shareable/bookmarkable link; on load the page restores it and runs. History + bookmarks live in vv-store.js
 // (this browser only; shared with every same-origin site, so the academy's ★ library sees them).
 const CAT_LABEL={mula:'mūlam',bhashya:'bhāṣyam','mula-bhashya':'mūlam + bhāṣyam',tika:'ṭīkās'};
-const GRP_LABEL={prasthana:'prasthāna-trayī',prakarana:'prakaraṇas',vartika:'vārtikas','other-bhashya':'other bhāṣyas',nibandha:'monographs'};
+const GRP_LABEL={prasthana:'prasthāna-trayī',prakarana:'prakaraṇas',vartika:'vārtikas','other-bhashya':'other bhāṣyas',nibandha:'in-depth studies'};   // निबन्धाः renamed 2026-10-21 (Harsha #9)
 const MODE_LABEL={cooccur:'same sentence',exact:'exact'};
 function getState(){
  const f={};document.querySelectorAll('#filters [data-k]').forEach(el=>{if(el.value!=='')f[el.dataset.k]=el.value;});
@@ -597,6 +609,7 @@ function getState(){
  const g=document.getElementById('group').value;if(g)st.g=g;
  const mode=document.getElementById('mode').value;if(mode!=='sandhi')st.mode=mode;
  if(!document.getElementById('showPossible').checked)st.np=1;
+ if(document.getElementById('showExt').checked)st.ext=1;
  if(Object.keys(f).length)st.f=f;
  return st;
 }
@@ -619,6 +632,7 @@ function applyState(st){   // set every control from a state; does NOT run
  const grp=document.getElementById('group');grp.value=st.g&&grp.querySelector(`option[value="${CSS.escape(st.g)}"]`)?st.g:'';
  const mode=document.getElementById('mode');mode.value=st.mode&&mode.querySelector(`option[value="${CSS.escape(st.mode)}"]`)?st.mode:'sandhi';
  document.getElementById('showPossible').checked=!st.np;
+ if(st.ext)document.getElementById('showExt').checked=true;
 }
 function searchUrl(){const p=stateToParams(getState()).toString();return location.href.split(/[?#]/)[0]+(p?'?'+p:'');}
 function saveUrlState(raw){try{history.replaceState(null,'',raw?searchUrl():location.pathname);}catch(e){}}
@@ -705,6 +719,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closePop();});
 // ★ My library → the library page of the reading site this reader last used (academy by default)
 if(window.VVStore){const ls=VVStore.lastSite();if(ls&&ls.base)document.getElementById('libLink').href=ls.base+'library.html';}
 else document.getElementById('libLink').style.display='none';
+{ const vb=document.getElementById('vvBrand'), vl=document.getElementById('vvBrandLogo'); vb.href=svBase()+'index.html'; vl.src=svBase()+'diya-40.png'; vl.onerror=()=>vl.remove(); }
 buildFilters();
 const LOAD={ready:false,got:0,total:1,slots:[],pct(){return Math.floor(100*this.got/this.total);}};
 let rerunT=null;
