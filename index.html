@@ -62,7 +62,7 @@
 <header><a class="vvbrand" id="vvBrand" href="#" data-vv-brand title="अध्ययन-सहकारी — Home"><span class="bt bf">अध्ययन-सहकारी</span><span class="bt bs">अध्य·सहकारी</span><img id="vvBrandLogo" alt="" aria-hidden="true"></a><h1>Sanskrit Search <small>— ITRANS or Devanāgarī; orthography-, space- & sandhi-tolerant</small></h1><a class="lib" id="libLink" href="https://constrainedrandomvar.github.io/vedantic-vyakarana-academy/library.html" target="_blank" rel="noopener" title="your bookmarks, collections and notes (kept in this browser only)">★ My library</a></header>
 <div class="bar">
  <div class="row">
-   <div id="qwrap"><input id="q" placeholder="search…  e.g.  devaH  or  देवः  or  saMskriya" autofocus autocomplete="off"><div id="hist" role="listbox"></div></div>
+   <div id="qwrap"><input id="q" placeholder="Smart sandhi-aware search — e.g. आत्मा एव (finds आत्मैव)" autofocus autocomplete="off"><div id="hist" role="listbox"></div></div>
    <button onclick="run(true)" style="font-size:16px;padding:9px 16px">Search</button>
    <div class="f"><label>Text</label><select id="text"></select></div>
    <div class="f"><label>Texts</label><select id="group" title="prasthāna-trayī = the Upaniṣads, the Bhagavad Gītā and the Brahma-sūtras with Śaṅkara’s bhāṣya and the commentaries on it (Ānandagiri, the vārttikas, Bhāṣyārka-prakāśa, Nyāyanirṇaya …)">
@@ -528,13 +528,16 @@ function renderHit(b,possible,useEx){
  const matchedText=(m1i!==-1&&m2i!==-1)?rawSnip.slice(m1i+1,m2i):null;
  const cp=`<span class="copy" onclick="navigator.clipboard.writeText(this.dataset.c);this.textContent='copied ✓'" data-c="${esc(b.s)}">copy text</span>`;
  const svU=svadhyayaLink(b,matchedText);
+ // A search opened from the site (header 🔍 / in-text "all texts") — its tab named itself vv-site-<id> (vv-store openTab): the 🪔 link goes
+ // BACK to that tab instead of opening another (Harsha 2026-10-21 batch 2 #2). Direct visits keep a new tab.
+ const SITE_TAB=(()=>{try{const o=window.opener;return o&&!o.closed&&/^vv-site-[a-z0-9]+$/.test(o.name)?o.name:'';}catch(e){return '';}})();
  // OUR link first (Harsha 2026-10-21 #16): the reading page (🪔 अध्ययन-सहकारी), else our own read/scan viewer for a text with no
  // reading page yet (also ours — always shown). Other sites (advaitaśārada / gitasupersite) only when "include links to other
  // sites" is ticked (off by default; their pages can't highlight the hit), and always AFTER ours.
  const ext=document.getElementById('showExt').checked?(gitaSupersiteLink(b)?{url:gitaSupersiteLink(b),label:`gitasupersite (select ${GITA_SUPERSITE_TEXTS.get(b.t)} tab)`}:(advaitasharadaLink(b,matchedText)?{url:advaitasharadaLink(b,matchedText),label:'advaitaśārada'}:null)):null;
  const own=svU?null:selfHostedLink(b,matchedText);
  const src=own?{url:own.url,label:own.label}:null;   // (bookmark fallback below)
- const svA=svU?`<a class="advaita svadhyaya" href="${esc(svU)}" target="_blank" rel="noopener" title="open this passage in अध्ययन-सहकारी"><img src="${esc(svBase())}diya-40.png" alt="" onerror="this.remove()"><span class="bf">अध्ययन-सहकारी</span><span class="bs">अध्य·सहकारी</span> ↗</a>`:'';
+ const svA=svU?`<a class="advaita svadhyaya" href="${esc(svU)}" ${SITE_TAB?`target="${SITE_TAB}"`:'target="_blank" rel="noopener"'} title="open this passage in अध्ययन-सहकारी"><img src="${esc(svBase())}diya-40.png" alt="" onerror="this.remove()"><span class="bf">अध्ययन-सहकारी</span><span class="bs">अध्य·सहकारी</span> ↗</a>`:'';
  const ownA=own?`<a class="advaita" href="${esc(own.url)}" target="_blank" rel="noopener">${own.label} ↗</a>`:'';
  // Secondary original-scan link, shown only when the primary is a readable typeset re-render (so the
  // reader can verify the OCR against the actual page image).
@@ -765,4 +768,5 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(hadController&&!reloaded){reloaded=true;location.reload();} });
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{}));
 }
-</script></body></html>
+</script><script>(function(){var q=document.getElementById('q');if(!q)return;var m=matchMedia('(max-width:640px)');function ph(){q.placeholder=m.matches?'Sandhi-aware search · आत्मा एव':'Smart sandhi-aware search — e.g. आत्मा एव (finds आत्मैव)';}ph();m.addEventListener('change',ph);})();</script>
+</body></html>
