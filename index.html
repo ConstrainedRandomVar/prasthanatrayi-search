@@ -531,13 +531,15 @@ function renderHit(b,possible,useEx){
  // A search opened from the site (header 🔍 / in-text "all texts") — its tab named itself vv-site-<id> (vv-store openTab): the 🪔 link goes
  // BACK to that tab instead of opening another (Harsha 2026-10-21 batch 2 #2). Direct visits keep a new tab.
  const SITE_TAB=(()=>{try{const o=window.opener;return o&&!o.closed&&/^vv-site-[a-z0-9]+$/.test(o.name)?o.name:'';}catch(e){return '';}})();
+ // iOS home-screen app (navigator.standalone): a _blank link leaves the app for a Safari view with Safari's storage — stay in this window.
+ const IOS_APP=navigator.standalone===true;
  // OUR link first (Harsha 2026-10-21 #16): the reading page (🪔 अध्ययन-सहकारी), else our own read/scan viewer for a text with no
  // reading page yet (also ours — always shown). Other sites (advaitaśārada / gitasupersite) only when "include links to other
  // sites" is ticked (off by default; their pages can't highlight the hit), and always AFTER ours.
  const ext=document.getElementById('showExt').checked?(gitaSupersiteLink(b)?{url:gitaSupersiteLink(b),label:`gitasupersite (select ${GITA_SUPERSITE_TEXTS.get(b.t)} tab)`}:(advaitasharadaLink(b,matchedText)?{url:advaitasharadaLink(b,matchedText),label:'advaitaśārada'}:null)):null;
  const own=svU?null:selfHostedLink(b,matchedText);
  const src=own?{url:own.url,label:own.label}:null;   // (bookmark fallback below)
- const svA=svU?`<a class="advaita svadhyaya" href="${esc(svU)}" ${SITE_TAB?`target="${SITE_TAB}"`:'target="_blank" rel="noopener"'} title="open this passage in अध्ययन-सहकारी"><img src="${esc(svBase())}diya-40.png" alt="" onerror="this.remove()"><span class="bf">अध्ययन-सहकारी</span><span class="bs">अध्य·सहकारी</span> ↗</a>`:'';
+ const svA=svU?`<a class="advaita svadhyaya" href="${esc(svU)}" ${SITE_TAB?`target="${SITE_TAB}"`:IOS_APP?'':'target="_blank" rel="noopener"'} title="open this passage in अध्ययन-सहकारी"><img src="${esc(svBase())}diya-40.png" alt="" onerror="this.remove()"><span class="bf">अध्ययन-सहकारी</span><span class="bs">अध्य·सहकारी</span> ↗</a>`:'';
  const ownA=own?`<a class="advaita" href="${esc(own.url)}" target="_blank" rel="noopener">${own.label} ↗</a>`:'';
  // Secondary original-scan link, shown only when the primary is a readable typeset re-render (so the
  // reader can verify the OCR against the actual page image).
