@@ -70,7 +70,7 @@
       <option value="prasthana">prasthāna-trayī (with Śaṅkara-bhāṣya)</option>
       <option value="prakarana">prakaraṇas</option>
       <option value="vartika">vārtikas</option>
-      <option value="other-bhashya" title="commentaries other than Śaṅkara’s bhāṣya — today: Madhusūdana · Śrīdhara · Nīlakaṇṭha on the Gītā">other bhāṣyas</option>
+      <option value="other-bhashya" title="commentaries other than Śaṅkara’s bhāṣya — today: Madhusūdana · Śrīdhara · Nīlakaṇṭha on the Gītā · Sadāśivendra on the Brahmasūtras">other bhāṣyas</option>
       <option value="nibandha">in-depth studies</option></select></div>
    <div class="f"><label>Layer</label><select id="category">
       <option value="">all layers</option>
@@ -91,7 +91,7 @@
 <div id="status">loading…</div>
 <div id="results"></div>
 
-<script src="index_manifest.01c94f32d5.js"></script>
+<script src="index_manifest.c28534511f.js"></script>
 <script src="svadhyaya-refidx.3d5874e435.js"></script>
 <script src="lib/sanskrit-search.js"></script>
 <script src="lib/sv-links.js"></script>
@@ -217,7 +217,7 @@ function blockCategory(b){
 function blockCats(b){
  const out=new Set(); const c=blockCategory(b); if(c)out.add(c);
  if(PRASTHANA_TEXTS.has(b.t)||b.t.startsWith(TIKA_PREFIX)||b.t==='dhanapati-gita')out.add('prasthana');   // a ṭīkā on Śaṅkara (like Ānandagiri), not an 'other bhāṣya'
- if(GITA_SUPERSITE_TEXTS.has(b.t))out.add('other-bhashya');
+ if(GITA_SUPERSITE_TEXTS.has(b.t)||b.t==='brahmatattvaprakashika')out.add('other-bhashya');   // Sadāśivendra's BS-vṛtti: an independent commentary on the sūtras
  if(PRAKARANA_TEXTS.has(b.t)||b.t==='panchadashi-modak-tika'){
    out.add('prakarana'); const sec=b.c.section;
    if(sec==='mula')out.add('mula');
