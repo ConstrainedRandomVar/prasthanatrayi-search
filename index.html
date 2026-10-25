@@ -91,7 +91,7 @@
 <div id="status">loading…</div>
 <div id="results"></div>
 
-<script src="index_manifest.c28534511f.js"></script>
+<script src="index_manifest.e5731fd9ff.js"></script>
 <script src="svadhyaya-refidx.3d5874e435.js"></script>
 <script src="lib/sanskrit-search.js"></script>
 <script src="lib/sv-links.js"></script>
@@ -195,7 +195,7 @@ function svadhyayaLink(b,matchedText){
 function blockCategory(b){
  if(b.t==='panchadashi-modak-tika'||SELF_TIKA_TEXTS.has(b.t))return 'tika';
  if(b.t.startsWith(TIKA_PREFIX))return 'tika';
- if(GITA_SUPERSITE_TEXTS.has(b.t))return 'bhashya';   // Madhusūdana/Śrīdhara/Nīlakaṇṭha comment on the Gītā itself (Harsha 2026-10-17)
+ if(GITA_SUPERSITE_TEXTS.has(b.t)||b.t==='shankaranandi-gita')return 'bhashya';   // Madhusūdana/Śrīdhara/Nīlakaṇṭha/Śaṅkarānanda comment on the Gītā itself (Harsha 2026-10-17)
  if(PRAKARANA_TEXTS.has(b.t))return 'prakarana';
  if(VARTIKA_TEXTS.has(b.t))return 'vartika';
  if(NIBANDHA_TEXTS.has(b.t))return 'nibandha';
@@ -217,7 +217,7 @@ function blockCategory(b){
 function blockCats(b){
  const out=new Set(); const c=blockCategory(b); if(c)out.add(c);
  if(PRASTHANA_TEXTS.has(b.t)||b.t.startsWith(TIKA_PREFIX)||b.t==='dhanapati-gita')out.add('prasthana');   // a ṭīkā on Śaṅkara (like Ānandagiri), not an 'other bhāṣya'
- if(GITA_SUPERSITE_TEXTS.has(b.t)||b.t==='brahmatattvaprakashika')out.add('other-bhashya');   // Sadāśivendra's BS-vṛtti: an independent commentary on the sūtras
+ if(GITA_SUPERSITE_TEXTS.has(b.t)||b.t==='brahmatattvaprakashika'||b.t==='shankaranandi-gita')out.add('other-bhashya');   // Sadāśivendra's BS-vṛtti: an independent commentary on the sūtras
  if(PRAKARANA_TEXTS.has(b.t)||b.t==='panchadashi-modak-tika'){
    out.add('prakarana'); const sec=b.c.section;
    if(sec==='mula')out.add('mula');
