@@ -104,7 +104,7 @@ const SS=window.SanskritSearch;
 // content-hashed shard files; loadIndex() fetches them in parallel and B grows (kept in index order) as each lands, so
 // the page is usable at once and a query is re-run as more text arrives. A deploy re-downloads only changed shards
 // (the sw keeps hashed files). Normalized forms are computed lazily (norm) + in idle slices, never in one blocking pass.
-// From file:// (no fetch) it falls back to the single index_data.js bundle.
+// From file:// (no fetch) it falls back to the one-file bundle: index_data.js, then its parts index_data-1.js … (pack.py).
 const MANI=window.SEARCH_MANIFEST||{texts:{},shards:[]};
 const IDX={texts:Object.assign({},MANI.texts),blocks:[]}, B=IDX.blocks;
 function norm(b){if(b._n===undefined){b._n=SS.normalize(b.s);b._nc=b._n.replace(/ /g,'');}return b;}   // _nc ≡ _n minus spaces — derive, don't normalize twice (perf 2026-10-17)
@@ -749,7 +749,7 @@ function loadScript(src){return new Promise((ok,ko)=>{const el=document.createEl
 async function loadIndex(){
  const sh=MANI.shards||[];
  if(location.protocol==='file:'||!sh.length){   // local double-click: no fetch() → the one-file bundle
-   await loadScript('index_data.js');const d=window.SEARCH_INDEX;Object.assign(IDX.texts,d.texts);LOAD.slots=[d.blocks];LOAD.got=LOAD.total=1;LOAD.ready=true;onShard(d.blocks);return;
+   await loadScript('index_data.js');const d=window.SEARCH_INDEX;for(let i=1;i<=(d.parts||0);i++)await loadScript('index_data-'+i+'.js');Object.assign(IDX.texts,d.texts);LOAD.slots=[d.blocks];LOAD.got=LOAD.total=1;LOAD.ready=true;onShard(d.blocks);return;
  }
  LOAD.total=sh.reduce((a,x)=>a+x.b,0);LOAD.slots=new Array(sh.length);let next=0;
  const worker=async()=>{while(next<sh.length){const i=next++;
