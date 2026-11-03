@@ -91,7 +91,7 @@
 <div id="status">loading…</div>
 <div id="results"></div>
 
-<script src="index_manifest.ebdadc896c.js"></script>
+<script src="index_manifest.112b700553.js"></script>
 <script src="svadhyaya-refidx.3d5874e435.js"></script>
 <script src="lib/sanskrit-search.js"></script>
 <script src="lib/sv-links.js"></script>
@@ -401,7 +401,7 @@ function advaitasharadaReadLink(cfg,b,matchedText){
  return url+`#${id}`;
 }
 function advaitasharadaLink(b,matchedText){
- const cfg=ADVAITASHARADA[b.t]; if(!cfg)return null;
+ const cfg=ADVAITASHARADA[b.t]; if(!cfg||b.c.noAS)return null;   // noAS: text AS lacks, supplied from the MRI print (Taittirīya Bhṛguvallī ṭīkā, build_anandagiri_index.py)
  if(cfg.readRoute)return advaitasharadaReadLink(cfg,b,matchedText);
  let vyakhya=cfg.vyakhya||null, secOverride=null;
  if(cfg.bySection){secOverride=cfg.bySection[b.c.section]; if(!secOverride)return null; vyakhya=secOverride.vyakhya||null;}
