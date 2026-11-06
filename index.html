@@ -70,7 +70,7 @@
       <option value="prasthana">prasthāna-trayī (with Śaṅkara-bhāṣya)</option>
       <option value="prakarana">prakaraṇas</option>
       <option value="vartika">vārtikas</option>
-      <option value="other-bhashya" title="commentaries other than Śaṅkara’s bhāṣya — today: Madhusūdana · Śrīdhara · Nīlakaṇṭha on the Gītā · Sadāśivendra on the Brahmasūtras">other bhāṣyas</option>
+      <option value="other-bhashya" title="commentaries other than Śaṅkara’s bhāṣya — today: Madhusūdana · Śrīdhara · Nīlakaṇṭha on the Gītā · Sadāśivendra on the Brahmasūtras · Amaradāsa’s Maṇiprabhā and Nityānandāśrama’s Mitākṣarā on the Upaniṣads">other bhāṣyas</option>
       <option value="nibandha">in-depth studies</option></select></div>
    <div class="f"><label>Layer</label><select id="category">
       <option value="">all layers</option>
@@ -91,7 +91,7 @@
 <div id="status">loading…</div>
 <div id="results"></div>
 
-<script src="index_manifest.e747b20a8f.js"></script>
+<script src="index_manifest.dd882f8f1d.js"></script>
 <script src="svadhyaya-refidx.caa1fbe23b.js"></script>
 <script src="lib/sanskrit-search.js"></script>
 <script src="lib/sv-links.js"></script>
@@ -151,6 +151,9 @@ const SELF_TIKA_TEXTS=new Set(['brihad-vartika-tika','vaiyasika-nyayamala','nyay
 const PRASTHANA_TEXTS=new Set(['isha-bhashya','kena-pada-bhashya','kena-vakya-bhashya','katha-bhashya','prashna-bhashya','mundaka-bhashya',
  'mandukya-bhashya','taittiriya-bhashya','aitareya-bhashya','chandogya-bhashya','brihad-bhashya','bg-bhashya','brahmasutra-bhashya',
  'brihad-vartika','taittiriya-vartika','brihadaranyaka-vartika-sara','brihad-vartika-tika','nyayanirnaya','vaiyasika-nyayamala','vanamala-taittiriya','abhinava-chandogya','ratnaprabha','purnanandi']);
+// Maṇiprabhā (8 Upaniṣads) + Mitākṣarā (Chāndogya, Bṛhad): commentaries on the Upaniṣad itself, not on Śaṅkara (2026-11-07) — like Śrīdhara on
+// the Gītā → layer bhāṣyam, group 'other bhāṣyas'
+const UP_VERSE_TEXTS=new Set(['maniprabha-isha','maniprabha-kena','maniprabha-katha','maniprabha-prashna','maniprabha-mundaka','maniprabha-mandukya','maniprabha-taittiriya','maniprabha-aitareya','mitakshara-chandogya','mitakshara-brihad']);
 // Monographs (निबन्धाः, the svādhyāya group of the same name): modern studies whose Sanskrit quotations are indexed.
 const NIBANDHA_TEXTS=new Set(['vrk-gita-upanishads']);
 // svādhyāya cross-link: search text-id → the academy reading-view page ("<out>.html"). A result for one of
@@ -195,7 +198,7 @@ function svadhyayaLink(b,matchedText){
 function blockCategory(b){
  if(b.t==='panchadashi-modak-tika'||SELF_TIKA_TEXTS.has(b.t))return 'tika';
  if(b.t.startsWith(TIKA_PREFIX))return 'tika';
- if(GITA_SUPERSITE_TEXTS.has(b.t)||b.t==='shankaranandi-gita')return 'bhashya';   // Madhusūdana/Śrīdhara/Nīlakaṇṭha/Śaṅkarānanda comment on the Gītā itself (Harsha 2026-10-17)
+ if(GITA_SUPERSITE_TEXTS.has(b.t)||b.t==='shankaranandi-gita'||UP_VERSE_TEXTS.has(b.t))return 'bhashya';   // Madhusūdana/Śrīdhara/Nīlakaṇṭha/Śaṅkarānanda comment on the Gītā itself (Harsha 2026-10-17)
  if(PRAKARANA_TEXTS.has(b.t))return 'prakarana';
  if(VARTIKA_TEXTS.has(b.t))return 'vartika';
  if(NIBANDHA_TEXTS.has(b.t))return 'nibandha';
@@ -217,7 +220,7 @@ function blockCategory(b){
 function blockCats(b){
  const out=new Set(); const c=blockCategory(b); if(c)out.add(c);
  if(PRASTHANA_TEXTS.has(b.t)||b.t.startsWith(TIKA_PREFIX)||b.t==='dhanapati-gita')out.add('prasthana');   // a ṭīkā on Śaṅkara (like Ānandagiri), not an 'other bhāṣya'
- if(GITA_SUPERSITE_TEXTS.has(b.t)||b.t==='brahmatattvaprakashika'||b.t==='shankaranandi-gita')out.add('other-bhashya');   // Sadāśivendra's BS-vṛtti: an independent commentary on the sūtras
+ if(GITA_SUPERSITE_TEXTS.has(b.t)||b.t==='brahmatattvaprakashika'||b.t==='shankaranandi-gita'||UP_VERSE_TEXTS.has(b.t))out.add('other-bhashya');   // Sadāśivendra's BS-vṛtti: an independent commentary on the sūtras
  if(PRAKARANA_TEXTS.has(b.t)||b.t==='panchadashi-modak-tika'){
    out.add('prakarana'); const sec=b.c.section;
    if(sec==='mula')out.add('mula');
