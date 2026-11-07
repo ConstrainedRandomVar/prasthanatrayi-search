@@ -714,7 +714,7 @@ function openPop(btn,bid){
  const inp=popEl.querySelector('.cnew input');
  const addNew=()=>{const n=inp.value.trim();if(!n)return;const cid=VVStore.collections.create(n);VVStore.collections.addItem(cid,bid);openPop(btn,bid);};
  inp.addEventListener('keydown',e=>{if(e.key==='Enter')addNew();if(e.key==='Escape')closePop();});
- popEl.addEventListener('click',e=>{const a=e.target.dataset.act;if(a==='new')addNew();else if(a==='done')closePop();else if(a==='rm'){VVStore.bookmarks.remove(bid);paintStar(btn,false);closePop();}});
+ popEl.addEventListener('click',e=>{const a=e.target.dataset.act;if(a==='new')addNew();else if(a==='done'){const n=inp.value.trim();if(n){VVStore.collections.addItem(VVStore.collections.create(n),bid);}closePop();}else if(a==='rm'){VVStore.bookmarks.remove(bid);paintStar(btn,false);closePop();}});
 }
 document.getElementById('results').addEventListener('click',e=>{
  const btn=e.target.closest('.star');if(!btn||!window.VVStore)return;
