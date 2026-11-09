@@ -178,7 +178,7 @@ const SV_BASE=(()=>{
  const ls=window.VVStore&&VVStore.lastSite();return(ls&&ok(ls.site)&&ls.base)?ls.base:SVADHYAYA_BASE;
 })();
 function svBase(){return SV_BASE;}
-function svadhyayaLink(b,matchedText){
+function svadhyayaLink(b,matchedText,ctx){   // ctx = SVLinks.hlCtx(snippet) → &hb=&ha= (which occurrence, #9e)
  const o=SVLinks.outOf(b); if(!o)return null;            // no reading view, or a section the view doesn't carry
  const ref=svRef(b); if(ref==null)return null;            // page-indexed → can't pinpoint a verse; no front-page link
  const hit=svFile((window.SVADHYAYA_REFIDX||{})[o]||{},ref); if(!hit)return null;
@@ -187,7 +187,7 @@ function svadhyayaLink(b,matchedText){
  // (robust to सन्धि/पद layer + saved mode, unlike a browser :~:text= fragment); #v-<ref> scrolls to the verse.
  // the निबन्धाः pages (In-depth studies) are academy-only — prod doesn't carry them (Harsha 2026-10-21 #9; site-profiles exclude)
  let url=`${/^reading-(prapancha-mithyatva|vrk-gita-upanishads)\.html$/.test(hit.file)?SVADHYAYA_BASE:svBase()}${hit.file}`;
- if(matchedText)url+=`?hl=${encodeURIComponent(matchedText.trim())}`;
+ if(matchedText)url+=`?hl=${encodeURIComponent(matchedText.trim())}`+(ctx||'');
  const side=SV_SIDE[b.t]||(SV_SECTION_SIDE[b.t]||{})[b.c.section];
  if(matchedText&&side)url+=`&side=${side}`+(b.c.tk?`&vk=${encodeURIComponent(b.c.tk)}`:'');
  if(matchedText&&SVLinks.layerOf(b)!=='मूलम्')url+='&vw=1';   // commentary hit: the page reveals the commentary if the reader is in mūla-only mode
@@ -530,7 +530,7 @@ function renderHit(b,possible,useEx){
  const m1i=rawSnip.indexOf(SS.M1), m2i=rawSnip.indexOf(SS.M2);
  const matchedText=(m1i!==-1&&m2i!==-1)?rawSnip.slice(m1i+1,m2i):null;
  const cp=`<span class="copy" onclick="navigator.clipboard.writeText(this.dataset.c);this.textContent='copied ✓'" data-c="${esc(b.s)}">copy text</span>`;
- const svU=svadhyayaLink(b,matchedText);
+ const svU=svadhyayaLink(b,matchedText,matchedText&&SVLinks.hlCtx?SVLinks.hlCtx(rawSnip,SS.M1,SS.M2):'');
  // A search result's 🪔 link opens in a NEW tab, so the page the search was started from is kept (reader suggestion, Harsha
  // 2026-10-28 — replaces the 2026-10-21 batch 2 #2 "back to the site tab" behaviour; no setting).
  // iOS home-screen app (navigator.standalone): a _blank link leaves the app for a Safari view with Safari's storage — stay in this window.
